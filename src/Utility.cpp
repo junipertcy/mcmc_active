@@ -2,7 +2,6 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
-#include <vector>
 #include <set>
 
 static const double LARGE_NEGATIVE_VALUE = -(numeric_limits<double>::max());
@@ -18,17 +17,15 @@ static int randN(int n) {
 };
 
 static ostream &print_ui_set(const set<unsigned> &uiset, ostream &os = cout) {
-    set<unsigned>::const_iterator iter = uiset.begin();
-    for (; iter != uiset.end(); iter++) {
+    for (auto iter = uiset.begin(); iter != uiset.end(); iter++) {
         os << *iter << endl;
     }
     return os;
 };
 
 static ostream &print_ui_vec(const vector<unsigned> &uivec, ostream &os = cout) {
-    unsigned sum = 0;
-    vector<unsigned>::const_iterator iter = uivec.begin();
-    for (; iter != uivec.end(); iter++) {
+    unsigned int sum = 0;
+    for (auto iter = uivec.begin(); iter != uivec.end(); iter++) {
         os << *iter << " ";
         sum += *iter;
     }
@@ -39,9 +36,8 @@ static ostream &print_ui_vec(const vector<unsigned> &uivec, ostream &os = cout) 
 
 
 static double entropy(float_vec_t dist, unsigned size) {
-    unsigned i;
     double temp = 0.0;
-    for (i = 0; i < size; i++) {
+    for (unsigned int i = 0; i < size; ++i) {
         if (dist[i] > 0) {
             temp -= dist[i] * log(dist[i]);// log: natural logarithm
         }
@@ -56,7 +52,7 @@ static void getTopN(const double *array, int *top, int size, int n) {
         cerr << "finding top n: n is over the array size boundary" << endl;
         topnum = size;
     }
-    double *localArray = new double[size];
+    auto *localArray = new double[size];
     for (i = 0; i < size; i++)
         localArray[i] = array[i];
     int temp;
@@ -128,7 +124,6 @@ public:
     }
 };
 
-
 template<class T>
 static std::string to_string(const T &t) {
     std::stringstream ss;
@@ -152,18 +147,18 @@ static unsigned sizeCommon(vector<unsigned> &vec1, vector<unsigned> &vec2) {
 
 static double
 calcCondEntropy(unsigned NUM_TYPE_C1, unsigned NUM_TYPE_C2, unsigned NUM_VTX, unsigned *C1, unsigned *C2) {
-    unsigned i, j;
+    unsigned int i, j;
     double H_C1, H_C2, MI, VI, CVI, HC1CondC2, HC1CondC2Norm;
     //
     vector<vector<unsigned int>> clustering1;
     vector<vector<unsigned int>> clustering2;
     //
     for (i = 0; i < NUM_TYPE_C1; i++) {
-        vector<unsigned> cluster;
+        vector<unsigned int> cluster;
         clustering1.push_back(cluster);
     }
     for (i = 0; i < NUM_TYPE_C2; i++) {
-        vector<unsigned> cluster;
+        vector<unsigned int> cluster;
         clustering2.push_back(cluster);
     }
     //
@@ -215,11 +210,11 @@ static double calcNormMI(unsigned NUM_TYPE_C1, unsigned NUM_TYPE_C2, unsigned NU
     vector<vector<unsigned int>> clustering2;
     //
     for (i = 0; i < NUM_TYPE_C1; i++) {
-        vector<unsigned> cluster;
+        vector<unsigned int> cluster;
         clustering1.push_back(cluster);
     }
     for (i = 0; i < NUM_TYPE_C2; i++) {
-        vector<unsigned> cluster;
+        vector<unsigned int> cluster;
         clustering2.push_back(cluster);
     }
     //

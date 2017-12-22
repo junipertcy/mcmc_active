@@ -1,6 +1,7 @@
 #include "MCMC.h"
 #include "Utility.cpp"
 
+
 double MCMC::PI = 3.141592653589793;
 
 MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel(tm), m_blockModelType(blockmodeltype),

@@ -3,6 +3,9 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <memory>
+#include <limits>
 
 using namespace std;
 

@@ -25,5 +25,4 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo unlink /usr/bin/g++; sudo ln -s /usr/bin/g++-5 /usr/bin/g++; fi
 script:
   - cmake .; make; bin/mcmc_active -i dataset/karate.gml -r 1 -g 2 -p 10
-  - cmake .; make; bin/mcmc_active -i dataset/polblogs_ud.gml -r 1 -g 2 -p 10
-
+#  - cmake .; make; bin/mcmc_active -i dataset/polblogs_ud.gml -r 1 -g 2 -p 10

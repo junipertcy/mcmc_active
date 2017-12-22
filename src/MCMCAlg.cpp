@@ -275,7 +275,7 @@ void MCMCAlg::updateAccumuMargDistri(unsigned mutatevtxno, MCMC &mcmc) {
 
 void MCMCAlg::checkTypeFixed() {
     if (!m_alltypefixed) {
-        for (set<unsigned>::const_iterator csiiter = m_topVtxSet.begin(); csiiter != m_topVtxSet.end(); csiiter++) {
+        for (auto csiiter = m_topVtxSet.begin(); csiiter != m_topVtxSet.end(); csiiter++) {
             unsigned int type = m_graph.getVertex(*csiiter).getType();
         }
     }
