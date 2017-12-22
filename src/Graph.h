@@ -26,8 +26,6 @@ public:
 
     bool isDirected() const { return m_directed; }
 
-    bool hasSelfloop() const { return m_selfloop; }
-
     const Vertex &getVertex(unsigned vtxno) const;
 
     bool vtxHasSelfloop(unsigned vtxno) const { return vtxSelfloopFlag[vtxno]; }
@@ -46,7 +44,6 @@ private:
     unsigned m_numEgs;
     bool m_directed;
     bool m_selfloop;
-    unsigned m_numSelfloop;
     vector <Vertex> vtxList;
     map<unsigned, string> m_mapIndex2Id;
     map<string, unsigned> m_mapId2Index;
@@ -54,7 +51,7 @@ private:
     map<unsigned, string> m_mapType2Value;
 
     uint_mat_t m_groupConnNumMatrix;
-    float_mat_t m_groupConnMatrix;
+    double_mat_t m_groupConnMatrix;
     uint_vec_t m_groupCardi;
 
     class Vertex {

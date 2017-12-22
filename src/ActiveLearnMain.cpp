@@ -67,7 +67,6 @@ int main(int argc, char const *argv[]) {
                 numLearnerStep, numPhase, numTop, learningMethod, modelType,
                 groupCorrected);
         mcmc_algorithm->runMCMCAlg();
-
     }
     return 0;
 };

@@ -6,52 +6,53 @@
 
 class MCMCAlg {
 public:
-    MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &frozentypes, unsigned numOptInit,
-            long numOptStep, unsigned numLearnerInit, long numLearnerStep, unsigned numPhase, unsigned numTop,
-            unsigned learningMethod, unsigned modelType, bool groupcorrected);
+    MCMCAlg(const Graph &graph, unsigned int numTypeInModel, set<unsigned int> &frozentypes, unsigned int numOptInit,
+            long numOptStep, unsigned int numLearnerInit, long numLearnerStep, unsigned int numPhase, unsigned int numTop,
+            unsigned int learningMethod, unsigned int modelType, bool groupcorrected);
 
-    void runMCMCAlg();
+    void runMCMCAlg() noexcept;
 
-    void runOnePhase();
+    void runOnePhase() noexcept;
 
-    void runOneInit();
+    void runOneInit() noexcept;
 
-    void runOneStep();
+    void runOneStep() noexcept;
 
 private:
-    int getRandRemainVtx();
-
-    void getTopVtx();
-
-    void initAccumuMargDistri();
-
-    void initAccuracyMatrix();
-
-    void updateAccuracyMatrix();
-
-    void updateAccumuMargDistri(unsigned mutatevtxno, MCMC &mcmc);
-
-    void checkTypeFixed();
-
-    void updateBestTypeModelInPhase();
-
+    unsigned int m_curPhase_;
+    static unsigned int numAccuracyBlock;
     static double stabRatio;
-    static unsigned numAccuracyBlock;
 
-    unsigned m_numVtx;
-    unsigned m_numTypeModel;
-    unsigned m_numTypeGraph;
+    unsigned int N_;  // number of nodes of the network
 
-    unsigned m_numOptInit;
+    int getRandRemainVtx() noexcept;
+
+    void getTopVtx() noexcept;
+
+    void initAccumuMargDistri() noexcept;
+
+    void initAccuracyMatrix() noexcept;
+
+    void updateAccuracyMatrix() noexcept;
+
+    void updateAccumuMargDistri(unsigned int mutatevtxno, MCMC &mcmc) noexcept;
+
+    void updateBestTypeModelInPhase() noexcept;
+
+
+    unsigned int m_numTypeModel;
+    unsigned int m_numTypeGraph;
+
+    unsigned int m_numOptInit;
     long m_numOptStep;
-    unsigned m_numLearnerInit;
+    unsigned int m_numLearnerInit;
     long m_numLearnerStep;
-    unsigned m_numPhase;
-    unsigned m_numTop;
-    unsigned m_method;
+    unsigned int m_numPhase;
+    unsigned int m_numTop;
+    unsigned int m_method;
 
-    set<unsigned> m_topVtxSet;
-    set<unsigned> m_remainVtxSet;
+    set<unsigned int> m_topVtxSet;
+    set<unsigned int> m_remainVtxSet;
     uint_vec_t m_topVtxSeq;
 
     const Graph &m_graph;
@@ -63,16 +64,12 @@ private:
     std::unique_ptr<Learner> m_learner;
 
     long m_curStep;
-    unsigned m_curPhase;
-    unsigned m_curInit;
 
-    unsigned m_resumePhase;
+    unsigned int m_curInit;
 
     float_mat_t m_accuracyMatrix;
     float_mat_t m_accumuMargDistri;
     uint_vec_t m_bestClfcInPhase;
-
-    bool m_alltypefixed;
 
     double m_dSumLHvalueInPhase;
 

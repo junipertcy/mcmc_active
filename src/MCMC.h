@@ -38,7 +38,7 @@ public:
     double getLHvalue() { return m_logLikelihoodValue; }
 
     vector<pair<unsigned, double>> m_LHVariPairs;
-    float_vec_t m_LLHVariTable;
+    double_vec_t m_LLHVariTable;
     float_mat_t m_bestEdgeConnMatrix;
     float_vec_t m_bestGroupCardi;
     uint_vec_t m_bestVtxTypeTable;
@@ -80,8 +80,13 @@ private:
 
     unsigned int m_maxsizeLogtable;
     TypeModel &m_typeModel;
+
+
     unsigned int m_numVtx;
     unsigned int m_numType;
+
+
+
     unsigned int m_mutateVtxNo;
     //unsigned m_sourceType;
     unsigned int m_targetType;

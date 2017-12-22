@@ -3,15 +3,8 @@
 
 Graph::Graph(string sGraphFileName) {
     unsigned i;
-    bool isblogud = false;
     ifstream infile(sGraphFileName.c_str());
-
-    /************************************/
-    string vtxdeg0filename("vtxDeg0IDs.txt");
-    ifstream vtxdeg0file(vtxdeg0filename.c_str());
-    set <string> vtxdeg0ids;
     string words;
-    /************************************/
 
     if (!infile) {
         cerr << "unable to open the input graph data file:"
@@ -33,86 +26,82 @@ Graph::Graph(string sGraphFileName) {
     setSelfloop(false);
     setDirected(false);
     while (infile >> word) {
-        if (word.compare("directed") == 0) {
+        if (word == "directed") {
             infile >> word;
-            if (word.compare("1") == 0)
+            if (word == "1") {
                 this->setDirected(true);
-            else
+            } else {
                 this->setDirected(false);
+            }
             break;
         }
     }
     while (infile >> word) {
-        if (word.compare("node") == 0) {
+        if (word == "node") {
 
             Vertex vtx = Vertex();
             while (infile >> word) {
-                if (word.compare("id") == 0) {
+                if (word == "id") {
                     infile >> id;
                     //id=atoi(word.c_str());
                     vtx.setId(id);
                 }
-                if (word.compare("type") == 0 || word.compare("value") == 0) {
+                if (word == "type" || word == "value") {
                     infile >> value;
                     vtx.setValue(value);
                 }
-                if (word.compare("]") == 0)
+                if (word == "]")
                     break;
             }
             /************************************/
-            if (isblogud && (vtxdeg0ids.count(id))) { ;
+            if (seenIds.count(id)) {
+                continue;
             } else {
-                if (seenIds.count(id)) {
-                    continue;
-                } else {
-                    vtx.setIndex(m_numVtx);
-                    m_mapId2Index.insert(valType_su(id, m_numVtx));
-                    seenIds.insert(id);
-                }
-                if (seenValues.count(value)) {
-                    type = m_mapValue2Type[value];
-                    vtx.setType(type);
-                } else {
-                    type = m_numType;
-                    vtx.setType(m_numType);
-                    m_mapValue2Type.insert(valType_su(value, m_numType));
-                    seenValues.insert(value);
-                    m_numType++;
-                }
-                m_mapIndex2Id.insert(valType_us(m_numVtx, id));
-                m_mapType2Value.insert(valType_us(type, value));
-                m_numVtx++;
-                this->vtxList.push_back(vtx);
+                vtx.setIndex(m_numVtx);
+                m_mapId2Index.insert(valType_su(id, m_numVtx));
+                seenIds.insert(id);
             }
+            if (seenValues.count(value)) {
+                type = m_mapValue2Type[value];
+                vtx.setType(type);
+            } else {
+                type = m_numType;
+                vtx.setType(m_numType);
+                m_mapValue2Type.insert(valType_su(value, m_numType));
+                seenValues.insert(value);
+                m_numType++;
+            }
+            m_mapIndex2Id.insert(valType_us(m_numVtx, id));
+            m_mapType2Value.insert(valType_us(type, value));
+            m_numVtx++;
+            this->vtxList.push_back(vtx);
             /*************************/
 
         }
-        if (word.compare("edge") == 0) {
+        if (word == "edge") {
             while (infile >> word) {
-                if (word.compare("source") == 0) {
+                if (word == "source") {
                     infile >> sourceid;
                 }
-                if (word.compare("target") == 0) {
+                if (word == "target") {
                     infile >> targetid;
                 }
-                if (word.compare("]") == 0)
+                if (word == "]")
                     break;
             }
             if (m_mapId2Index.count(sourceid)) {
                 sourceindex = m_mapId2Index[sourceid];
             } else {
-                sourceindex = 0;
                 cerr << "unable to find the id information of the source vertex" << endl;
                 continue;
             }
             if (m_mapId2Index.count(targetid)) {
                 targetindex = m_mapId2Index[targetid];
             } else {
-                targetindex = 0;
                 cerr << "unable to find the id information of the target vertex" << endl;
                 continue;
             }
-            if (sourceid.compare(targetid) == 0) {
+            if (sourceid == targetid) {
                 selfloopVtxSet.insert(sourceindex);
                 setSelfloop(true);
             }
@@ -125,8 +114,6 @@ Graph::Graph(string sGraphFileName) {
 
     infile.close();
 
-    m_numSelfloop = selfloopVtxSet.size();
-
     vtxSelfloopFlag.assign(m_numVtx, 0);
     if (m_selfloop) {
         for (i = 0; i < m_numVtx; i++) {
@@ -135,7 +122,6 @@ Graph::Graph(string sGraphFileName) {
         }
     }
 
-    //
     m_groupConnNumMatrix.resize(m_numType);
     for (i = 0; i < m_numType; i++) {
         m_groupConnNumMatrix[i].resize(m_numType);
@@ -152,55 +138,42 @@ Graph::Graph(string sGraphFileName) {
     calcGroupConnNumMatrix();
     calcGroupConnMatrix();
 }
-//
-//Graph::~Graph(void) {
-//    unsigned i;
-//    for (i = 0; i < m_numType; i++) {
-//        delete[] m_groupConnNumMatrix[i];
-//    }
-//    delete[] m_groupConnNumMatrix;
-//
-//    for (i = 0; i < m_numType; i++) {
-//        delete[] m_groupConnMatrix[i];
-//    }
-//    delete[] m_groupConnMatrix;
-//    delete[] m_groupCardi;
-//}
-
 
 void Graph::calcNumEdges() {
     unsigned int numEgs = 0;
-    for (unsigned int i = 0; i < vtxList.size(); ++i) {
-        numEgs += vtxList[i].getOutDegree();
+    for (auto const &i: vtxList) {
+        numEgs += i.getOutDegree();
     }
     m_numEgs = numEgs / 2;
 }
 
 void Graph::calcGroupConnNumMatrix() {
-    unsigned i, j;
-    unsigned stype, ttype;
+    unsigned int i, j;
+    unsigned int stype, ttype;
 
     for (i = 0; i < m_numType; i++) {
         for (j = 0; j < m_numType; j++) {
             m_groupConnNumMatrix[i][j] = 0;
         }
     }
-    for (i = 0; i < m_numType; i++)
+
+    for (i = 0; i < m_numType; i++) {
         m_groupCardi[i] = 0;
-    //unsigned numNodesD0=0;
+    }
+
     for (i = 0; i < vtxList.size(); i++) {
         const set<unsigned> &edges = vtxList[i].getTargets();
-        set<unsigned>::const_iterator siter = edges.begin();
+
         stype = vtxList[i].getType();
         m_groupCardi[stype]++;
-        for (; siter != edges.end(); siter++) {
-            ttype = vtxList[*siter].getType();
-            if ((!isDirected()) && (ttype == stype) && ((*siter) > i))
+
+        for (auto const &k: edges) {
+            ttype = vtxList[k].getType();
+            if ((!isDirected()) && (ttype == stype) && (k > i))
                 continue;
             m_groupConnNumMatrix[stype][ttype]++;
         }
     }
-    //cout<<"Number of Nodes with Degree 0: "<<numNodesD0<<endl;
 }
 
 void Graph::calcGroupConnMatrix() {

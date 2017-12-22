@@ -35,7 +35,7 @@ static ostream &print_ui_vec(const vector<unsigned> &uivec, ostream &os = cout) 
 };
 
 
-static double entropy(float_vec_t dist, unsigned size) {
+static double entropy(double_vec_t dist, unsigned size) {
     double temp = 0.0;
     for (unsigned int i = 0; i < size; ++i) {
         if (dist[i] > 0) {
@@ -167,10 +167,10 @@ calcCondEntropy(unsigned NUM_TYPE_C1, unsigned NUM_TYPE_C2, unsigned NUM_VTX, un
         clustering2[C2[i]].push_back(i);
     }
     //
-    float_vec_t distri_c1;
+    double_vec_t distri_c1;
     distri_c1.resize(NUM_TYPE_C1);
 
-    float_vec_t distri_c2;
+    double_vec_t distri_c2;
     distri_c2.resize(NUM_TYPE_C2);
 
     for (i = 0; i < NUM_TYPE_C1; i++) {
@@ -223,8 +223,8 @@ static double calcNormMI(unsigned NUM_TYPE_C1, unsigned NUM_TYPE_C2, unsigned NU
         clustering2[C2[i]].push_back(i);
     }
     //
-    float_vec_t distri_c1;
-    float_vec_t distri_c2;
+    double_vec_t distri_c1;
+    double_vec_t distri_c2;
 
     distri_c1.resize(NUM_TYPE_C1);
     distri_c2.resize(NUM_TYPE_C2);

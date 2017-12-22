@@ -6,13 +6,13 @@
 class Learner {
 
 public:
-    virtual void resetForNextPhase() noexcept { return; }
+    virtual void resetForNextPhase() noexcept { ; }
 
-    virtual void resetForNextInit() noexcept { return; }
+    virtual void resetForNextInit() noexcept { ; }
 
     virtual unsigned int getTopVtx(unsigned int *arrayTop, unsigned numTop) noexcept { return 0; }
 
-    virtual void updateData() noexcept { return; }
+    virtual void updateData() noexcept { ; }
 
     virtual unsigned int getNumVtx() const noexcept { return m_MC_A.getTypeModel().getGraph().getNumVtx(); }
 
@@ -26,20 +26,20 @@ protected:
     const MCMC &m_MC_A;
     const MCMC &m_MC_B;
     const set<unsigned> &m_topVtxSet;
-    unsigned m_numVtx;// number of vertices in graph
-    unsigned m_numType;// number of types in the model (may be not that in the real graph)
+    unsigned int m_numVtx;// number of vertices in graph
+    unsigned int m_numType;// number of types in the model (may be not that in the real graph)
     static const unsigned QUERYSTRATEGY;// query strategy
     string m_methodName;
 
-    unsigned m_arraysize;
-    unsigned m_numtop;
+    unsigned int m_arraysize;
+    unsigned int m_numtop;
 
     uint_vec_t m_arrayTopVtxNo;  //some query strategies may output more than "numTop" vertices
     uint_vec_t m_arrayVtxNo;
-    float_vec_t m_arrayLearnScores;
+    double_vec_t m_arrayLearnScores;
 
     unsigned int *m_arrayVtxNoSort;
-    float *m_arrayLearnScoresSort;
+    double *m_arrayLearnScoresSort;
 
 };
 
@@ -62,11 +62,9 @@ public:
     unsigned int getNumTypeModel() const noexcept override;
 
 private:
-    float_mat_t m_accumuMargDistri;
+    double_mat_t m_accumuMargDistri;
     float_vec_t m_accumuCondEntropy;
     float_vec_t m_numAccumuCondEntropy;
-
-    unsigned int updateDataIndex;
 };
 
 

@@ -2,7 +2,7 @@
 #include "Utility.cpp"
 
 double MCMCAlg::stabRatio = 0.5;
-unsigned MCMCAlg::numAccuracyBlock = 10;
+unsigned int MCMCAlg::numAccuracyBlock = 10;
 
 MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &frozentypes, unsigned numOptInit,
                  long numOptStep, unsigned numLearnerInit, long numLearnerStep, unsigned numPhase, unsigned numTop,
@@ -11,8 +11,10 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
 
     m_typeModelA = std::make_unique<TypeModel>(graph, numTypeInModel, frozentypes);
     m_typeModelB = std::make_unique<TypeModel>(graph, numTypeInModel, frozentypes);
+
     m_MC_A = std::make_unique<MCMC>(*m_typeModelA, modelType, groupcorrected);
     m_MC_B = std::make_unique<MCMC>(*m_typeModelB, modelType, groupcorrected);
+
     unsigned i;
     m_numOptInit = numOptInit;
     m_numOptStep = numOptStep;
@@ -26,16 +28,15 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
         default:
             m_learner = std::make_unique<MutualInfo>(*m_MC_A, *m_MC_B, m_topVtxSet);
     }
-    m_alltypefixed = false;
 
-    m_numVtx = m_typeModelA->getGraph().getNumVtx();
+    N_ = m_typeModelA->getGraph().getNumVtx();
     m_numTypeGraph = m_typeModelA->getGraph().getNumType();
     m_numTypeModel = m_typeModelA->getNumType();
-    for (i = 0; i < m_numVtx; i++) {
+    for (i = 0; i < N_; i++) {
         m_remainVtxSet.insert(i);
     }
     //init top vtx seq
-    for (i = 0; i < m_numVtx; i++) {
+    for (i = 0; i < N_; i++) {
         unsigned gtype = graph.getVertex(i).getType();
         if (m_typeModelA->isGTypeFrozen(gtype)) {
             m_topVtxSet.insert(i);
@@ -44,9 +45,9 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
         }
     }
     //showiset(m_topVtxSet);
-    m_bestClfcInPhase.resize(m_numVtx);
-    m_accumuMargDistri.resize(m_numVtx);
-    for (i = 0; i < m_numVtx; i++) {
+    m_bestClfcInPhase.resize(N_);
+    m_accumuMargDistri.resize(N_);
+    for (i = 0; i < N_; i++) {
         m_accumuMargDistri[i].resize(m_numTypeModel);
     }
 
@@ -57,22 +58,26 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
 
 }
 
-void MCMCAlg::runMCMCAlg() {
+void MCMCAlg::runMCMCAlg() noexcept {
+    /* IMPORTANT: Entry function */
     initAccuracyMatrix();
-    m_curPhase = 1;
-#ifdef RESUME
-    m_curPhase=m_resumePhase;
-#endif
-    for (; (m_curPhase <= m_numPhase) && (m_remainVtxSet.size() > 0); m_curPhase++) {
+    for (m_curPhase_ = 1; (m_curPhase_ <= m_numPhase) && (m_remainVtxSet.size() > 0); ++m_curPhase_) {
         runOnePhase();
     }
 }
 
-void MCMCAlg::runOnePhase() {
+void MCMCAlg::initAccuracyMatrix() noexcept {
+    m_accuracyMatrix.resize(numAccuracyBlock - 1);
+    for (unsigned int i = 0; i < numAccuracyBlock - 1; i++)
+        m_accuracyMatrix[i].resize(m_numPhase);
+    for (unsigned int i = 0; i < numAccuracyBlock - 1; i++)
+        for (unsigned int j = 0; j < m_numPhase; j++)
+            m_accuracyMatrix[i][j] = 0.0;
+}
+
+void MCMCAlg::runOnePhase() noexcept {
 
     unsigned i, j;
-
-    checkTypeFixed();
 
     m_dSumLHvalueInPhase = 0.0;
 
@@ -99,7 +104,7 @@ void MCMCAlg::runOnePhase() {
 
     getTopVtx();
 
-    double **typeClassifiMatrix = new double *[m_numTypeGraph];
+    auto **typeClassifiMatrix = new double *[m_numTypeGraph];
     for (i = 0; i < m_numTypeGraph; i++)
         typeClassifiMatrix[i] = new double[m_numTypeModel];
     for (i = 0; i < m_numTypeGraph; i++) {
@@ -110,7 +115,7 @@ void MCMCAlg::runOnePhase() {
     int realtype;
     double **vtxClassifiMatrixA = m_MC_A->getVtxClassifiMatrix();
     double **vtxClassifiMatrixB = m_MC_B->getVtxClassifiMatrix();
-    for (i = 0; i < m_numVtx; i++) {
+    for (i = 0; i < N_; i++) {
         realtype = m_MC_A->getTypeModel().getGraph().getVertex(i).getType();
         for (j = 0; j < m_numTypeModel; j++) {
             typeClassifiMatrix[realtype][j] +=/*vtxClassifiMatrixA[i][j];//*/
@@ -118,22 +123,21 @@ void MCMCAlg::runOnePhase() {
         }
     }
 
-    unsigned *topvtxGroupCardi = new unsigned[m_numTypeGraph];
-    for (i = 0; i < m_numTypeGraph; i++)
+    auto *topvtxGroupCardi = new unsigned[m_numTypeGraph];
+    for (i = 0; i < m_numTypeGraph; i++) {
         topvtxGroupCardi[i] = 0;
-    set<unsigned>::const_iterator csiter;
-    for (csiter = m_topVtxSet.begin(); csiter != m_topVtxSet.end(); csiter++) {
+    }
+    for (auto csiter = m_topVtxSet.begin(); csiter != m_topVtxSet.end(); csiter++) {
         realtype = (m_typeModelA->m_graph).getVertex(*csiter).getType();
         topvtxGroupCardi[realtype]++;
     }
-    //
     for (i = 0; i < m_numTypeGraph; i++)
         delete[] typeClassifiMatrix[i];
     delete[] typeClassifiMatrix;
     delete[] topvtxGroupCardi;
 }
 
-void MCMCAlg::runOneInit() {
+void MCMCAlg::runOneInit() noexcept {
 
 
     m_MC_A->randInitTypeModel(this->m_topVtxSet);
@@ -157,7 +161,7 @@ void MCMCAlg::runOneInit() {
     }
 }
 
-void MCMCAlg::runOneStep() {
+void MCMCAlg::runOneStep() noexcept {
     unsigned mutateVtxNo;
     unsigned sourceType;
     unsigned targetType;
@@ -205,19 +209,19 @@ void MCMCAlg::runOneStep() {
     }
 }
 
-int MCMCAlg::getRandRemainVtx() {
-    unsigned index = randN(m_remainVtxSet.size());
-    set<unsigned>::iterator setiter = m_remainVtxSet.begin();
-    for (unsigned i = 0; i < index; i++)
+int MCMCAlg::getRandRemainVtx() noexcept {
+    int index = randN((int)m_remainVtxSet.size());
+    auto setiter = m_remainVtxSet.begin();
+    for (unsigned int i = 0; i < index; ++i) {
         setiter++;
+    }
     return *setiter;
 }
 
-void MCMCAlg::getTopVtx() {
-    unsigned i;
-    unsigned *arrayTop = new unsigned[m_numVtx];//may output more than "m_numTop" vertices
+void MCMCAlg::getTopVtx() noexcept {
+    auto *arrayTop = new unsigned[N_];//may output more than "m_numTop" vertices
     unsigned int numtop = m_learner->getTopVtx(arrayTop, m_numTop);
-    for (i = 0; i < numtop; i++) {
+    for (unsigned int i = 0; i < numtop; i++) {
         m_topVtxSet.insert(arrayTop[i]);
         m_remainVtxSet.erase(arrayTop[i]);
         m_topVtxSeq.push_back(arrayTop[i]);
@@ -225,19 +229,11 @@ void MCMCAlg::getTopVtx() {
     delete[] arrayTop;
 }
 
-void MCMCAlg::initAccuracyMatrix() {
-    m_accuracyMatrix.resize(numAccuracyBlock - 1);
-    for (unsigned int i = 0; i < numAccuracyBlock - 1; i++)
-        m_accuracyMatrix[i].resize(m_numPhase);
-    for (unsigned int i = 0; i < numAccuracyBlock - 1; i++)
-        for (unsigned int j = 0; j < m_numPhase; j++)
-            m_accuracyMatrix[i][j] = 0.0;
-}
 
-void MCMCAlg::updateAccuracyMatrix() {
+void MCMCAlg::updateAccuracyMatrix() noexcept {
     unsigned int count = 0;
     double accuracyRatio = 1.0 / numAccuracyBlock;
-    for (unsigned int vtxno = 0; vtxno < m_numVtx; vtxno++) {
+    for (unsigned int vtxno = 0; vtxno < N_; vtxno++) {
         if (m_topVtxSet.count(vtxno)) {
             continue;
         }
@@ -245,51 +241,42 @@ void MCMCAlg::updateAccuracyMatrix() {
         double accuracyvalue = m_accumuMargDistri[vtxno][realtype];
         for (unsigned int i = 1; i < numAccuracyBlock; i++) {
             if (accuracyvalue >= accuracyRatio * i) {
-                m_accuracyMatrix[i - 1][m_curPhase - 1]++;
+                m_accuracyMatrix[i - 1][m_curPhase_ - 1]++;
             } else break;
         }
         count++;
     }
     for (unsigned int i = 1; i < numAccuracyBlock; i++) {
-        m_accuracyMatrix[i - 1][m_curPhase - 1] /= (double) count;
+        m_accuracyMatrix[i - 1][m_curPhase_ - 1] /= (double) count;
     }
 }
 
 
 
-void MCMCAlg::initAccumuMargDistri() {
-    unsigned i, j;
-    for (i = 0; i < m_numVtx; i++) {
-        for (j = 0; j < m_numTypeModel; j++) {
+void MCMCAlg::initAccumuMargDistri() noexcept {
+    for (unsigned int i = 0; i < N_; i++) {
+        for (unsigned int j = 0; j < m_numTypeModel; j++) {
             m_accumuMargDistri[i][j] = 0.0;
         }
     }
 }
 
-void MCMCAlg::updateAccumuMargDistri(unsigned mutatevtxno, MCMC &mcmc) {
+void MCMCAlg::updateAccumuMargDistri(unsigned mutatevtxno, MCMC &mcmc) noexcept {
     const vector <pair<unsigned, double>> &lhvaripairs = mcmc.getLHVariPairs();
     for (unsigned int i = 0; i < lhvaripairs.size(); i++) {
         m_accumuMargDistri[mutatevtxno][lhvaripairs[i].first] += lhvaripairs[i].second;
     }
 }
 
-void MCMCAlg::checkTypeFixed() {
-    if (!m_alltypefixed) {
-        for (auto csiiter = m_topVtxSet.begin(); csiiter != m_topVtxSet.end(); csiiter++) {
-            unsigned int type = m_graph.getVertex(*csiiter).getType();
-        }
-    }
-}
-
-void MCMCAlg::updateBestTypeModelInPhase() {
+void MCMCAlg::updateBestTypeModelInPhase() noexcept {
     double bestLLHvalueInInit = max(m_MC_A->getBestLHvalue(), m_MC_B->getBestLHvalue());
     if (bestLLHvalueInInit > m_bestLLHvalueInPhase)
         m_bestLLHvalueInPhase = bestLLHvalueInInit;
     if (m_MC_A->getBestLHvalue() >= m_MC_B->getBestLHvalue()) {
-        for (unsigned int i = 0; i < m_numVtx; i++)
+        for (unsigned int i = 0; i < N_; i++)
             m_bestClfcInPhase[i] = m_MC_A->m_bestVtxTypeTable[i];
     } else {
-        for (unsigned int i = 0; i < m_numVtx; i++)
+        for (unsigned int i = 0; i < N_; i++)
             m_bestClfcInPhase[i] = m_MC_B->m_bestVtxTypeTable[i];
     }
 }

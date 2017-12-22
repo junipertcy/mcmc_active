@@ -8,7 +8,6 @@ MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel
                                                                      m_groupCorrected(
                                                                              groupcorrected)//,m_bestTypeModel(tm)
 {
-    unsigned int i;
     m_numVtx = tm.getGraph().getNumVtx();
     m_numType = tm.getNumType();
 
@@ -19,12 +18,12 @@ MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel
     initLogGammaTable(2 + m_numVtx * m_numVtx);
 
     dvtxClassifiMatrix = new double *[m_numVtx];
-    for (i = 0; i < m_numVtx; i++) {
+    for (unsigned int i = 0; i < m_numVtx; i++) {
         dvtxClassifiMatrix[i] = new double[m_numType];
     }
 
     m_bestEdgeConnMatrix.resize(m_numType);
-    for (i = 0; i < m_numType; i++) {
+    for (unsigned int i = 0; i < m_numType; i++) {
         m_bestEdgeConnMatrix[i].resize(m_numType);
     }
     m_bestGroupCardi.resize(m_numType);
@@ -41,7 +40,6 @@ unsigned MCMC::getTargetType(unsigned int mutateVtxNo) noexcept {
 }
 
 void MCMC::calcLHVari(unsigned int vtxNo, TypeModel &typeModel) noexcept {
-
     m_LHVariPairs.clear();
     bool isDirected = typeModel.getGraph().isDirected();
 //    std::clog << "======== isDirected is : " << !isDirected << "\n";
@@ -54,86 +52,70 @@ void MCMC::calcLHVari(unsigned int vtxNo, TypeModel &typeModel) noexcept {
 
 //case 2.1: undirected for model type 1
 void MCMC::calcLHVariUDM1(unsigned int v, TypeModel &typeModel) noexcept {
-    unsigned s, t, o;
+    unsigned int s, t, o;
     s = typeModel.getVtxType(v);
-    unsigned ns = typeModel.m_groupCardiTable[s];
-    unsigned nvs = typeModel.m_numTargetVtxGroup[v][s];
-    bool hasSelfLoop = typeModel.getGraph().hasSelfloop();
-    unsigned lvv = 0;
-    if (typeModel.getGraph().vtxHasSelfloop(v))
-        lvv = 1;
+    unsigned int ns = typeModel.m_groupCardiTable[s];
+    unsigned int nvs = typeModel.m_numTargetVtxGroup[v][s];
+
     double LHVari;
-    pair<unsigned, double> lhvariPair(s, 0.0);
+    pair<unsigned int, double> lhvariPair(s, 0.0);
     m_LHVariPairs.push_back(lhvariPair);
     m_LLHVariTable[s] = 0.0;
     for (t = 0; t < typeModel.getNumActiveType(); t++) {
         if (t == s)
             continue;
-        unsigned nt = typeModel.m_groupCardiTable[t];
-        if (m_groupCorrected)
+        unsigned int nt = typeModel.m_groupCardiTable[t];
+        if (m_groupCorrected) {
             LHVari = (ns - 1) * getLog(ns - 1) + (nt + 1) * getLog(nt + 1) - ns * getLog(ns) -
                      nt * getLog(nt);//ns'*log(ns')+nt'*log(nt')-ns*log(ns)-nt*log(nt)
-        else
+        } else {
             LHVari = 0.0;
+        }
         for (o = 0; o < m_numType; o++) {
             if (o == s || o == t)
                 continue;
             //s<->o
-            unsigned eso = typeModel.m_numEdgesOf2Groups[s][o];
-            unsigned nvo = typeModel.m_numTargetVtxGroup[v][o];
-            unsigned no = typeModel.m_groupCardiTable[o];
+            unsigned int eso = typeModel.m_numEdgesOf2Groups[s][o];
+            unsigned int nvo = typeModel.m_numTargetVtxGroup[v][o];
+            unsigned int no = typeModel.m_groupCardiTable[o];
             LHVari += getLogDivFac(eso - nvo, eso);
             LHVari += getLogDivFac(ns * no + 1, ns * no - no + 1);
             LHVari += getLogDivFac(ns * no - eso - no + nvo, ns * no - eso);
             //t<->o
-            unsigned eto = typeModel.m_numEdgesOf2Groups[t][o];
+            unsigned int eto = typeModel.m_numEdgesOf2Groups[t][o];
             LHVari += getLogDivFac(eto + nvo, eto);
             LHVari += getLogDivFac(nt * no + 1, nt * no + no + 1);
             LHVari += getLogDivFac(nt * no - eto + no - nvo, nt * no - eto);
         }
         //s<->t
-        unsigned est = typeModel.m_numEdgesOf2Groups[s][t];
-        unsigned nvt = typeModel.m_numTargetVtxGroup[v][t];
-        if (hasSelfLoop) {
-            LHVari += getLogDivFac(est - nvt + nvs - lvv, est);
-            LHVari += getLogDivFac(ns * nt + 1, (ns - 1) * (nt + 1) + 1);
-            LHVari += getLogDivFac((ns - 1) * (nt + 1) - est + nvt - nvs + lvv, ns * nt - est);
-        } else {
-            LHVari += getLogDivFac(est - nvt + nvs, est);
-            LHVari += getLogDivFac(ns * nt + 1, (ns - 1) * (nt + 1) + 1);
-            LHVari += getLogDivFac((ns - 1) * (nt + 1) - est + nvt - nvs, ns * nt - est);
-        }
+        unsigned int est = typeModel.m_numEdgesOf2Groups[s][t];
+        unsigned int nvt = typeModel.m_numTargetVtxGroup[v][t];
+
+        /* Self-loop is not allowed */
+
+        LHVari += getLogDivFac(est - nvt + nvs, est);
+        LHVari += getLogDivFac(ns * nt + 1, (ns - 1) * (nt + 1) + 1);
+        LHVari += getLogDivFac((ns - 1) * (nt + 1) - est + nvt - nvs, ns * nt - est);
         //s<->s
-        unsigned ess = typeModel.m_numEdgesOf2Groups[s][s];
-        if (hasSelfLoop) {
-            LHVari += getLogDivFac(ess - nvs, ess);
-            LHVari += getLogDivFac(ns * (ns + 1) / 2 + 1, ns * (ns - 1) / 2 + 1);
-            LHVari += getLogDivFac(ns * (ns - 1) / 2 - ess + nvs, ns * (ns + 1) / 2 - ess);
-        } else {
-            LHVari += getLogDivFac(ess - nvs, ess);
-            LHVari += getLogDivFac(ns * (ns - 1) / 2 + 1, (ns - 1) * (ns - 2) / 2 + 1);
-            LHVari += getLogDivFac((ns - 1) * (ns - 2) / 2 - ess + nvs, ns * (ns - 1) / 2 - ess);
-        }
+        unsigned int ess = typeModel.m_numEdgesOf2Groups[s][s];
+        LHVari += getLogDivFac(ess - nvs, ess);
+        LHVari += getLogDivFac(ns * (ns - 1) / 2 + 1, (ns - 1) * (ns - 2) / 2 + 1);
+        LHVari += getLogDivFac((ns - 1) * (ns - 2) / 2 - ess + nvs, ns * (ns - 1) / 2 - ess);
+
         //t<->t
-        unsigned ett = typeModel.m_numEdgesOf2Groups[t][t];
-        if (hasSelfLoop) {
-            LHVari += getLogDivFac(ett + nvt + lvv, ett);
-            LHVari += getLogDivFac(nt * (nt + 1) / 2 + 1, (nt + 1) * (nt + 2) / 2 + 1);
-            LHVari += getLogDivFac((nt + 1) * (nt + 2) / 2 - ett - nvt - lvv, nt * (nt + 1) / 2 - ett);
-        } else {
-            LHVari += getLogDivFac(ett + nvt, ett);
-            LHVari += getLogDivFac(nt * (nt - 1) / 2 + 1, (nt + 1) * nt / 2 + 1);
-            LHVari += getLogDivFac((nt + 1) * nt / 2 - ett - nvt, nt * (nt - 1) / 2 - ett);
-        }
+        unsigned int ett = typeModel.m_numEdgesOf2Groups[t][t];
+        LHVari += getLogDivFac(ett + nvt, ett);
+        LHVari += getLogDivFac(nt * (nt - 1) / 2 + 1, (nt + 1) * nt / 2 + 1);
+        LHVari += getLogDivFac((nt + 1) * nt / 2 - ett - nvt, nt * (nt - 1) / 2 - ett);
         //
-        pair<unsigned, double> lhvariPair(t, LHVari);
-        m_LHVariPairs.push_back(lhvariPair);
+        pair<unsigned int, double> lhvariPair_(t, LHVari);
+        m_LHVariPairs.push_back(lhvariPair_);
         m_LLHVariTable[t] = LHVari;
     }
 }
 
 unsigned MCMC::calcTargetType() noexcept {
-    unsigned i;
+    unsigned int i;
     double dsum = 0.0;
     double maxLogDif = m_LHVariPairs[0].second;
     double minLogDif = m_LHVariPairs[0].second;
@@ -161,8 +143,8 @@ unsigned MCMC::calcTargetType() noexcept {
     }
     for (i = 0; i < m_LHVariPairs.size(); i++)
         m_LHVariPairs[i].second /= dsum;
-    unsigned index = getIndexProb(m_transProbSelect, m_LHVariPairs.size());
-    unsigned targetType = m_LHVariPairs[index].first;
+    int index = getIndexProb(m_transProbSelect, (int) m_LHVariPairs.size());
+    unsigned int targetType = m_LHVariPairs[index].first;
     return targetType;
 }
 
@@ -180,12 +162,11 @@ void MCMC::initLogTable(unsigned size) noexcept {
 
 //log_gamma(0),log_gamma(0.5),log_gamma(1)...; log_gamma(i)=m_loggammatable[2i];
 void MCMC::initLogGammaTable(unsigned size) noexcept {
-    unsigned i;
     m_loggammatable.resize(size + 1);
-    m_loggammatable[0] = 0;//dummy, will never be used;
-    m_loggammatable[1] = log(sqrt(PI));//log_gamma(0.5)
-    m_loggammatable[2] = log(1.0);//log_gamma(1)
-    for (i = 3; i < size; i++)
+    m_loggammatable[0] = 0;  //dummy, will never be used;
+    m_loggammatable[1] = log(sqrt(PI));  //log_gamma(0.5)
+    m_loggammatable[2] = log(1.0);  //log_gamma(1)
+    for (unsigned int i = 3; i < size; i++)
         m_loggammatable[i] = log((0.5 * i - 1)) + m_loggammatable[i - 2];//log_gamma(0.5i)
 }
 
@@ -222,30 +203,28 @@ double MCMC::getLog(unsigned a) {
 }
 
 void MCMC::initVtxClassifiMatrix() {
-    unsigned i, j;
-    for (i = 0; i < m_numVtx; i++) {
-        for (j = 0; j < m_numType; j++) {
+    for (unsigned int i = 0; i < m_numVtx; ++i) {
+        for (unsigned int j = 0; j < m_numType; ++j) {
             dvtxClassifiMatrix[i][j] = 0.0;
         }
     }
 }
 
 void MCMC::updateVtxClassifiMatrix() {//should be called after mutateTypeModel()
-    unsigned i;
-    for (i = 0; i < m_LHVariPairs.size(); i++)
-        dvtxClassifiMatrix[m_mutateVtxNo][m_LHVariPairs[i].first] += m_LHVariPairs[i].second;
+    for (auto const &i: m_LHVariPairs) {
+        dvtxClassifiMatrix[m_mutateVtxNo][i.first] += i.second;
+    }
 }
 
 double **MCMC::getVtxClassifiMatrix() {
-    unsigned i, j;
     double dSum;
-    for (i = 0; i < m_numVtx; i++) {
+    for (unsigned int i = 0; i < m_numVtx; i++) {
         dSum = 0.0;
-        for (j = 0; j < m_numType; j++) {
+        for (unsigned int j = 0; j < m_numType; j++) {
             dSum += dvtxClassifiMatrix[i][j];
         }
-        if (dSum != 0) {
-            for (j = 0; j < m_numType; j++)
+        if (dSum != 0.0) {
+            for (unsigned int j = 0; j < m_numType; j++)
                 dvtxClassifiMatrix[i][j] /= dSum;
         }
     }
@@ -260,7 +239,6 @@ void MCMC::randInitTypeModel(const set<unsigned> &topVtxSet) {
 void MCMC::initBestTypeModel() {
     unsigned i, j;
     m_bestLLHvalue = calcLikelihood(m_typeModel);
-    //m_bestTypeModel=m_typeModel;
     for (i = 0; i < m_numType; i++) {
         for (j = 0; j < m_numType; j++) {
             m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
@@ -321,54 +299,19 @@ double MCMC::calcLikelihood(const TypeModel &typemodel) {
 
 //This method returns the likelihood of the current Type Model (model type is 1)
 double MCMC::calcLikelihoodM1(const TypeModel &typemodel) {
-    unsigned i, j, a, b;
-    unsigned numtype = typemodel.getNumType();
-    //double likelihood_value=0.0;
+    unsigned int i, j, a, b;
+    unsigned int numtype = typemodel.getNumType();
     double log_likelihood_value = 0.0;
-    if (typemodel.getGraph().isDirected() && typemodel.getGraph().hasSelfloop()) {
-        for (i = 0; i < numtype; i++) {
-            for (j = 0; j < numtype; j++) {
-                a = typemodel.m_numEdgesOf2Groups[i][j];
+
+    // Only for non-directed and no self-loop
+    for (i = 0; i < numtype; i++) {
+        for (j = i; j < numtype; j++) {
+            a = typemodel.m_numEdgesOf2Groups[i][j];
+            if (i == j)
+                b = typemodel.m_groupCardiTable[i] * (typemodel.m_groupCardiTable[i] - 1) / 2 - a;
+            else
                 b = typemodel.m_groupCardiTable[i] * typemodel.m_groupCardiTable[j] - a;
-                log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
-            }
-        }
-    }
-    if (typemodel.getGraph().isDirected() && !typemodel.getGraph().hasSelfloop()) {
-        for (i = 0; i < numtype; i++) {
-            for (j = 0; j < numtype; j++) {
-                a = typemodel.m_numEdgesOf2Groups[i][j];
-                if (i == j)
-                    b = typemodel.m_groupCardiTable[i] * (typemodel.m_groupCardiTable[i] - 1) - a;
-                else
-                    b = typemodel.m_groupCardiTable[i] * typemodel.m_groupCardiTable[j] - a;
-                log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
-            }
-        }
-    }
-    if (!typemodel.getGraph().isDirected() && typemodel.getGraph().hasSelfloop()) {
-        for (i = 0; i < numtype; i++) {
-            for (j = i; j < numtype; j++) {
-                a = typemodel.m_numEdgesOf2Groups[i][j];
-                if (i == j)
-                    b = typemodel.m_groupCardiTable[i] * (typemodel.m_groupCardiTable[i] - 1) / 2 +
-                        typemodel.m_groupCardiTable[i] - a;
-                else
-                    b = typemodel.m_groupCardiTable[i] * typemodel.m_groupCardiTable[j] - a;
-                log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
-            }
-        }
-    }
-    if (!typemodel.getGraph().isDirected() && !typemodel.getGraph().hasSelfloop()) {
-        for (i = 0; i < numtype; i++) {
-            for (j = i; j < numtype; j++) {
-                a = typemodel.m_numEdgesOf2Groups[i][j];
-                if (i == j)
-                    b = typemodel.m_groupCardiTable[i] * (typemodel.m_groupCardiTable[i] - 1) / 2 - a;
-                else
-                    b = typemodel.m_groupCardiTable[i] * typemodel.m_groupCardiTable[j] - a;
-                log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
-            }
+            log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
         }
     }
     return log_likelihood_value;
