@@ -4,9 +4,9 @@
 double MCMCAlg::stabRatio = 0.5;
 unsigned int MCMCAlg::numAccuracyBlock = 10;
 
-MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &frozentypes, unsigned numOptInit,
-                 long numOptStep, unsigned numLearnerInit, long numLearnerStep, unsigned numPhase, unsigned numTop,
-                 unsigned learningMethod, unsigned modelType, bool groupcorrected):
+MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> &frozentypes, unsigned int numOptInit,
+                 long numOptStep, unsigned int numLearnerInit, long numLearnerStep, unsigned int numPhase, unsigned int numTop,
+                 unsigned int learningMethod, unsigned int modelType, bool groupcorrected):
        m_graph(graph) {
 
     m_typeModelA = std::make_unique<TypeModel>(graph, numTypeInModel, frozentypes);
@@ -15,7 +15,7 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
     m_MC_A = std::make_unique<MCMC>(*m_typeModelA, modelType, groupcorrected);
     m_MC_B = std::make_unique<MCMC>(*m_typeModelB, modelType, groupcorrected);
 
-    unsigned i;
+    unsigned int i;
     m_numOptInit = numOptInit;
     m_numOptStep = numOptStep;
     m_numLearnerInit = numLearnerInit;
@@ -61,7 +61,7 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned> &fro
 void MCMCAlg::runMCMCAlg() noexcept {
     /* IMPORTANT: Entry function */
     initAccuracyMatrix();
-    for (m_curPhase_ = 1; (m_curPhase_ <= m_numPhase) && (m_remainVtxSet.size() > 0); ++m_curPhase_) {
+    for (m_curPhase_ = 1; (m_curPhase_ <= m_numPhase) && (!m_remainVtxSet.empty()); ++m_curPhase_) {
         runOnePhase();
     }
 }
@@ -76,8 +76,6 @@ void MCMCAlg::initAccuracyMatrix() noexcept {
 }
 
 void MCMCAlg::runOnePhase() noexcept {
-
-    unsigned i, j;
 
     m_dSumLHvalueInPhase = 0.0;
 
@@ -104,37 +102,37 @@ void MCMCAlg::runOnePhase() noexcept {
 
     getTopVtx();
 
-    auto **typeClassifiMatrix = new double *[m_numTypeGraph];
-    for (i = 0; i < m_numTypeGraph; i++)
-        typeClassifiMatrix[i] = new double[m_numTypeModel];
-    for (i = 0; i < m_numTypeGraph; i++) {
-        for (j = 0; j < m_numTypeModel; j++) {
-            typeClassifiMatrix[i][j] = 0.0;
+    std::unique_ptr<double_mat_t> typeClassifiMatrix = std::make_unique<double_mat_t>();
+    (*typeClassifiMatrix).resize(m_numTypeGraph);
+
+    for (unsigned int i = 0; i < m_numTypeGraph; i++)
+        (*typeClassifiMatrix)[i].resize(m_numTypeModel);
+    for (unsigned int i = 0; i < m_numTypeGraph; i++) {
+        for (unsigned int j = 0; j < m_numTypeModel; j++) {
+            (*typeClassifiMatrix)[i][j] = 0.0;
         }
     }
-    int realtype;
+    unsigned int realtype;
     double **vtxClassifiMatrixA = m_MC_A->getVtxClassifiMatrix();
     double **vtxClassifiMatrixB = m_MC_B->getVtxClassifiMatrix();
-    for (i = 0; i < N_; i++) {
+    for (unsigned int i = 0; i < N_; i++) {
         realtype = m_MC_A->getTypeModel().getGraph().getVertex(i).getType();
-        for (j = 0; j < m_numTypeModel; j++) {
-            typeClassifiMatrix[realtype][j] +=/*vtxClassifiMatrixA[i][j];//*/
+        for (unsigned int j = 0; j < m_numTypeModel; j++) {
+            (*typeClassifiMatrix)[realtype][j] +=/*vtxClassifiMatrixA[i][j];//*/
                     (vtxClassifiMatrixA[i][j] + vtxClassifiMatrixB[i][j]) / 2;
         }
     }
 
-    auto *topvtxGroupCardi = new unsigned[m_numTypeGraph];
-    for (i = 0; i < m_numTypeGraph; i++) {
-        topvtxGroupCardi[i] = 0;
+    std::unique_ptr<uint_vec_t> topvtxGroupCardi = std::make_unique<uint_vec_t>();
+    (*topvtxGroupCardi).resize(m_numTypeGraph);
+    for (unsigned int i = 0; i < m_numTypeGraph; i++) {
+        (*topvtxGroupCardi)[i] = 0;
     }
-    for (auto csiter = m_topVtxSet.begin(); csiter != m_topVtxSet.end(); csiter++) {
-        realtype = (m_typeModelA->m_graph).getVertex(*csiter).getType();
-        topvtxGroupCardi[realtype]++;
+
+    for (auto const &i: m_topVtxSet) {
+        realtype = (m_typeModelA->m_graph).getVertex(i).getType();
+        (*topvtxGroupCardi)[realtype]++;
     }
-    for (i = 0; i < m_numTypeGraph; i++)
-        delete[] typeClassifiMatrix[i];
-    delete[] typeClassifiMatrix;
-    delete[] topvtxGroupCardi;
 }
 
 void MCMCAlg::runOneInit() noexcept {
@@ -167,7 +165,7 @@ void MCMCAlg::runOneStep() noexcept {
     unsigned targetType;
     //typeModelA
     do {
-        mutateVtxNo = getRandRemainVtx();
+        mutateVtxNo = (unsigned) getRandRemainVtx();
         sourceType = m_typeModelA->m_vtxTypeTable[mutateVtxNo];
     } while (m_typeModelA->m_groupCardiTable[sourceType] == 1);
     targetType = m_MC_A->getTargetType(mutateVtxNo);
@@ -186,7 +184,7 @@ void MCMCAlg::runOneStep() noexcept {
 
     //typeModelB
     do {
-        mutateVtxNo = getRandRemainVtx();
+        mutateVtxNo = (unsigned) getRandRemainVtx();
         sourceType = m_typeModelB->m_vtxTypeTable[mutateVtxNo];
     } while (m_typeModelB->m_groupCardiTable[sourceType] == 1);
     targetType = m_MC_B->getTargetType(mutateVtxNo);
@@ -202,7 +200,6 @@ void MCMCAlg::runOneStep() noexcept {
         this->m_lNumLHvalueInPhase++;
     }
 
-    //
     if ((m_curInit <= m_numLearnerInit) && (m_curStep > stabRatio * double(m_numLearnerStep)) &&
         (m_curStep <= m_numLearnerStep)) {
         m_learner->updateData();
@@ -219,14 +216,15 @@ int MCMCAlg::getRandRemainVtx() noexcept {
 }
 
 void MCMCAlg::getTopVtx() noexcept {
-    auto *arrayTop = new unsigned[N_];//may output more than "m_numTop" vertices
-    unsigned int numtop = m_learner->getTopVtx(arrayTop, m_numTop);
+    std::unique_ptr<uint_vec_t> arrayTop = std::make_unique<uint_vec_t>();
+    (*arrayTop).resize(N_);
+
+    unsigned int numtop = m_learner->getTopVtx(*arrayTop, m_numTop);
     for (unsigned int i = 0; i < numtop; i++) {
-        m_topVtxSet.insert(arrayTop[i]);
-        m_remainVtxSet.erase(arrayTop[i]);
-        m_topVtxSeq.push_back(arrayTop[i]);
+        m_topVtxSet.insert((*arrayTop)[i]);
+        m_remainVtxSet.erase((*arrayTop)[i]);
+        m_topVtxSeq.push_back((*arrayTop)[i]);
     }
-    delete[] arrayTop;
 }
 
 
@@ -262,9 +260,9 @@ void MCMCAlg::initAccumuMargDistri() noexcept {
 }
 
 void MCMCAlg::updateAccumuMargDistri(unsigned mutatevtxno, MCMC &mcmc) noexcept {
-    const vector <pair<unsigned, double>> &lhvaripairs = mcmc.getLHVariPairs();
-    for (unsigned int i = 0; i < lhvaripairs.size(); i++) {
-        m_accumuMargDistri[mutatevtxno][lhvaripairs[i].first] += lhvaripairs[i].second;
+    const vector <pair<unsigned int, double>> &lhvaripairs = mcmc.getLHVariPairs();
+    for (auto const &i: lhvaripairs) {
+        m_accumuMargDistri[mutatevtxno][i.first] += i.second;
     }
 }
 

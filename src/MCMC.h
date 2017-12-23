@@ -81,19 +81,17 @@ private:
     unsigned int m_maxsizeLogtable;
     TypeModel &m_typeModel;
 
-
     unsigned int m_numVtx;
     unsigned int m_numType;
 
-
-
     unsigned int m_mutateVtxNo;
-    //unsigned m_sourceType;
     unsigned int m_targetType;
     unsigned int m_sourceType;
+
     double MAXLOGDOUBLE;
     double MINLOGDOUBLE;
     static const unsigned OPTIMIZOR;
+
     double **dvtxClassifiMatrix;
     double m_bestLLHvalue;
     double m_logLikelihoodValue;

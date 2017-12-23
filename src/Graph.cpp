@@ -2,7 +2,7 @@
 
 
 Graph::Graph(string sGraphFileName) {
-    unsigned i;
+    unsigned int i;
     ifstream infile(sGraphFileName.c_str());
     string words;
 
@@ -10,7 +10,7 @@ Graph::Graph(string sGraphFileName) {
         cerr << "unable to open the input graph data file:"
              << sGraphFileName << endl;
     }
-    set<unsigned> selfloopVtxSet;
+    set<unsigned int> selfloopVtxSet;
     m_numVtx = 0;
     m_numType = 0;
     set <string> seenIds;
@@ -18,11 +18,11 @@ Graph::Graph(string sGraphFileName) {
     string word;
     string id;
     string value;
-    unsigned type;
+    unsigned int type;
     string sourceid;
     string targetid;
-    unsigned sourceindex;
-    unsigned targetindex;
+    unsigned int sourceindex;
+    unsigned int targetindex;
     setSelfloop(false);
     setDirected(false);
     while (infile >> word) {
@@ -38,7 +38,6 @@ Graph::Graph(string sGraphFileName) {
     }
     while (infile >> word) {
         if (word == "node") {
-
             Vertex vtx = Vertex();
             while (infile >> word) {
                 if (word == "id") {
@@ -148,20 +147,19 @@ void Graph::calcNumEdges() {
 }
 
 void Graph::calcGroupConnNumMatrix() {
-    unsigned int i, j;
     unsigned int stype, ttype;
 
-    for (i = 0; i < m_numType; i++) {
-        for (j = 0; j < m_numType; j++) {
+    for (unsigned int i = 0; i < m_numType; i++) {
+        for (unsigned int j = 0; j < m_numType; j++) {
             m_groupConnNumMatrix[i][j] = 0;
         }
     }
 
-    for (i = 0; i < m_numType; i++) {
+    for (unsigned int i = 0; i < m_numType; i++) {
         m_groupCardi[i] = 0;
     }
 
-    for (i = 0; i < vtxList.size(); i++) {
+    for (unsigned int i = 0; i < vtxList.size(); i++) {
         const set<unsigned> &edges = vtxList[i].getTargets();
 
         stype = vtxList[i].getType();
@@ -177,9 +175,8 @@ void Graph::calcGroupConnNumMatrix() {
 }
 
 void Graph::calcGroupConnMatrix() {
-    unsigned i, j;
-    for (i = 0; i < m_numType; i++) {
-        for (j = i; j < m_numType; j++) {
+    for (unsigned int i = 0; i < m_numType; i++) {
+        for (unsigned int j = i; j < m_numType; j++) {
             if (m_groupConnNumMatrix[i][j] == 0) {
                 m_groupConnMatrix[i][j] = 0.0;
                 continue;
@@ -194,8 +191,8 @@ void Graph::calcGroupConnMatrix() {
             }
         }
     }
-    for (i = 1; i < m_numType; i++) {
-        for (j = 0; j < i; j++) {
+    for (unsigned int i = 1; i < m_numType; i++) {
+        for (unsigned int j = 0; j < i; j++) {
             m_groupConnMatrix[i][j] = m_groupConnMatrix[j][i];
         }
     }

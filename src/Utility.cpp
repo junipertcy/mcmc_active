@@ -68,11 +68,11 @@ static void getTopN(const double *array, int *top, int size, int n) {
     delete[] localArray;
 };
 
-template<typename ArrayElemType, typename ArrayIndexType>
-static int qspartition(ArrayElemType *A, ArrayIndexType *B, int p, int r) {
-    ArrayElemType x = A[r];
-    ArrayElemType tempelem;
-    ArrayIndexType tempindex;
+template<typename VectorElemType, typename VectorIndexType>
+static int qspartition(VectorElemType &A, VectorIndexType &B, int p, int r) {
+    decltype(auto) x = A[r];
+    decltype(auto) tempelem = A[0];  // TODO: better ways?
+    decltype(auto) tempindex = B[0];
     int i = p - 1;
     for (int j = p; j <= r - 1; j++) {
         if (A[j] <= x) {
@@ -94,8 +94,8 @@ static int qspartition(ArrayElemType *A, ArrayIndexType *B, int p, int r) {
     return i + 1;
 };
 
-template<typename ArrayElemType, typename ArrayIndexType>
-static void quicksort(ArrayElemType *A, ArrayIndexType *B, int p, int r) {
+template<typename VectorElemType, typename VectorIndexType>
+static void quicksort(VectorElemType &A, VectorIndexType &B, int p, int r) {
     if (p < r) {
         int q = qspartition(A, B, p, r);
         quicksort(A, B, p, q - 1);

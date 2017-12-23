@@ -10,7 +10,7 @@ public:
 
     virtual void resetForNextInit() noexcept { ; }
 
-    virtual unsigned int getTopVtx(unsigned int *arrayTop, unsigned numTop) noexcept { return 0; }
+    virtual unsigned int getTopVtx(uint_vec_t &arrayTop, unsigned numTop) noexcept { return 0; }
 
     virtual void updateData() noexcept { ; }
 
@@ -21,7 +21,7 @@ public:
     virtual unsigned int getNumTypeModel() const noexcept { return m_MC_A.getTypeModel().getNumType(); }
 
 protected:
-    Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet, string methodname);
+    Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet);
 
     const MCMC &m_MC_A;
     const MCMC &m_MC_B;
@@ -29,7 +29,6 @@ protected:
     unsigned int m_numVtx;// number of vertices in graph
     unsigned int m_numType;// number of types in the model (may be not that in the real graph)
     static const unsigned QUERYSTRATEGY;// query strategy
-    string m_methodName;
 
     unsigned int m_arraysize;
     unsigned int m_numtop;
@@ -38,8 +37,8 @@ protected:
     uint_vec_t m_arrayVtxNo;
     double_vec_t m_arrayLearnScores;
 
-    unsigned int *m_arrayVtxNoSort;
-    double *m_arrayLearnScoresSort;
+    uint_vec_t m_arrayVtxNoSort;
+    double_vec_t m_arrayLearnScoresSort;
 
 };
 
@@ -51,7 +50,7 @@ public:
 
     void resetForNextInit() noexcept override;
 
-    unsigned int getTopVtx(unsigned int *arrayTop, unsigned numTop) noexcept override;
+    unsigned int getTopVtx(uint_vec_t &arrayTop, unsigned numTop) noexcept override;
 
     void updateData() noexcept override;
 
