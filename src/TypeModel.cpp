@@ -23,27 +23,15 @@ TypeModel::TypeModel(const Graph &graph, unsigned numtype, set<unsigned> &frozen
         m_numEdgesOf2Groups[i].resize(m_numType);
     }
 
-    groupConnMatrix.resize(m_numType);
-    for (i = 0; i < m_numType; i++) {
-        groupConnMatrix[i].resize(m_numType);
-    }
-
-    lvtxClassifiMatrix.resize(m_numVtx);
-    dvtxClassifiMatrix.resize(m_numVtx);
-    for (i = 0; i < m_numVtx; i++) {
-        lvtxClassifiMatrix[i].resize(m_numType);
-        dvtxClassifiMatrix[i].resize(m_numType);
-    }
-
     auto suiciter = frozentypes.begin();
     for (i = m_numActiveType; suiciter != frozentypes.end(); suiciter++, i++) {
-        m_mapFzntyMty2Gty.insert(valType_uu(i, *suiciter));
-        m_mapFzntyGty2Mty.insert(valType_uu(*suiciter, i));
+        m_mapFzntyMty2Gty.insert(uu_map_t::value_type(i, *suiciter));
+        m_mapFzntyGty2Mty.insert(uu_map_t::value_type(*suiciter, i));
         m_frozenTypesInGraph.insert(*suiciter);
     }
 }
 
-void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) {
+void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) noexcept {
     unsigned i, j;
     unsigned type = 0;
     unsigned int m_numVtx = m_graph.getNumVtx();
@@ -135,8 +123,6 @@ void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) {
         const set<unsigned> &groupSet = m_groupSets[i];
         for (siiter = groupSet.begin(); siiter != groupSet.end(); siiter++) {
             unsigned sourceVtx = *siiter;
-            if (m_graph.vtxHasSelfloop(sourceVtx))
-                numSelfloop++;
         }
         m_numEdgesOf2Groups[i][i] = (m_numEdgesOf2Groups[i][i] + numSelfloop) / 2;
     }
@@ -152,17 +138,16 @@ void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) {
     }
 }
 
-void TypeModel::mutate(unsigned v, unsigned t) {
+void TypeModel::mutate(unsigned v, unsigned t) noexcept {
     unsigned o;
     unsigned s = m_vtxTypeTable[v];
 
     unsigned lvv = 0;
-    if (m_graph.vtxHasSelfloop(v))
-        lvv = 1;
     //update eij
     for (o = 0; o < m_numType; o++) {
-        if (o == s || o == t)
+        if (o == s || o == t) {
             continue;
+        }
         //eso'=eso-nvo, eos'=eso'
         m_numEdgesOf2Groups[s][o] -= m_numTargetVtxGroup[v][o];
         m_numEdgesOf2Groups[o][s] = m_numEdgesOf2Groups[s][o];
@@ -178,12 +163,11 @@ void TypeModel::mutate(unsigned v, unsigned t) {
     m_numEdgesOf2Groups[t][t] += (m_numTargetVtxGroup[v][t] + lvv);
 
     //update nvi and niv
-    const set<unsigned> &vSources = m_graph.getVertex(v).getSources();
-    set<unsigned>::const_iterator setiter = vSources.begin();
-    for (; setiter != vSources.end(); setiter++) {
+    const set<unsigned int> &vSources = m_graph.getVertex(v).getSources();
+    for (auto const &i: vSources) {
         //nvs'=nvs-1, nvt'=nvt+1, here v is i;
-        m_numTargetVtxGroup[*setiter][s]--;
-        m_numTargetVtxGroup[*setiter][t]++;
+        m_numTargetVtxGroup[i][s]--;
+        m_numTargetVtxGroup[i][t]++;
     }
 
     //update ni
@@ -200,37 +184,4 @@ void TypeModel::mutate(unsigned v, unsigned t) {
 
 }
 
-void TypeModel::initGroupConnMatrix() {
-    unsigned i, j;
-    for (i = 0; i < m_numType; i++) {
-        for (j = 0; j < m_numType; j++) {
-            groupConnMatrix[i][j] = 0;
-        }
-    }
-    numAccuGCM = 0l;
-}
-
-void TypeModel::updateGroupConnMatrix() {
-    unsigned i, j;
-    for (i = 0; i < m_numType; i++) {
-        for (j = i; j < m_numType; j++) {
-            if (m_numEdgesOf2Groups[i][j] == 0) {
-                continue;
-            }
-            if (i == j)
-                groupConnMatrix[i][i] += ((double) (2 * m_numEdgesOf2Groups[i][i])) /
-                                         (((double) m_groupCardiTable[i]) *
-                                          ((double) (m_groupCardiTable[i] - 1))); //  2eii/(ni*(ni-1))
-            else
-                groupConnMatrix[i][j] += ((double) m_numEdgesOf2Groups[i][j]) / (((double) m_groupCardiTable[i]) *
-                                                                                 ((double) (m_groupCardiTable[j]))); //  eij/(ni*nj)
-        }
-    }
-    for (i = 1; i < m_numType; i++) {
-        for (j = 0; j < i; j++) {
-            groupConnMatrix[i][j] = groupConnMatrix[j][i];
-        }
-    }
-    numAccuGCM++;
-}
 

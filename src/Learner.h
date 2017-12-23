@@ -25,20 +25,13 @@ protected:
 
     const MCMC &m_MC_A;
     const MCMC &m_MC_B;
-    const set<unsigned> &m_topVtxSet;
-    unsigned int m_numVtx;// number of vertices in graph
-    unsigned int m_numType;// number of types in the model (may be not that in the real graph)
-    static const unsigned QUERYSTRATEGY;// query strategy
+//// TODO: it was originally declared as const; how to retain the type status?
+//    std::shared_ptr<MCMC> m_MC_A;
+//    std::shared_ptr<MCMC> m_MC_B;
 
-    unsigned int m_arraysize;
-    unsigned int m_numtop;
-
-    uint_vec_t m_arrayTopVtxNo;  //some query strategies may output more than "numTop" vertices
-    uint_vec_t m_arrayVtxNo;
-    double_vec_t m_arrayLearnScores;
-
-    uint_vec_t m_arrayVtxNoSort;
-    double_vec_t m_arrayLearnScoresSort;
+    const set<unsigned int> &m_topVtxSet;
+    unsigned int N_;// number of vertices in graph
+    unsigned int Q_;// number of types in the model (may be not that in the real graph)
 
 };
 

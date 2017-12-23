@@ -1,8 +1,8 @@
 /* ~~~~~~~~~~~~~~~~ Notes ~~~~~~~~~~~~~~~~ */
 //
-// The code was originally written by Yaojia Zhu <yaojia.zhu at gmail.com>;
+// The code was originally written by Yaojia Zhu <yaojia.zhu@gmail.com>;
 //
-// Tzu-Chi Yen <junipertcy at gmail.com>
+// Modified by Tzu-Chi Yen <junipertcy@gmail.com>.
 //
 /* ~~~~~~~~~~~~~~~~ Includes ~~~~~~~~~~~~~~~~ */
 // Boost

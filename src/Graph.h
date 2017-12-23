@@ -14,45 +14,22 @@ private:
 public:
     explicit Graph(string sGraphFile);
 
-    uint_vec_t vtxSelfloopFlag;
+    unsigned int getNumVtx() const { return N_; }
 
-    unsigned getNumVtx() const { return m_numVtx; }
-
-    unsigned getNumType() const { return m_numType; }
-
-    void setDirected(bool b_direc) { m_directed = b_direc; }
-
-    void setSelfloop(bool b_sl) { m_selfloop = b_sl; }
-
-    bool isDirected() const { return m_directed; }
+    unsigned int getNumType() const { return Q_; }
 
     const Vertex &getVertex(unsigned vtxno) const;
-
-    bool vtxHasSelfloop(unsigned vtxno) const { return vtxSelfloopFlag[vtxno]; }
 
     const unsigned getVtxDegree(unsigned vtxno) const;
 
 private:
-    void calcNumEdges();
+    unsigned int N_;
+    unsigned int Q_;
+    unsigned int E_;
 
-    void calcGroupConnNumMatrix();
-
-    void calcGroupConnMatrix();
-
-    unsigned m_numVtx;
-    unsigned m_numType;
-    unsigned m_numEgs;
-    bool m_directed;
-    bool m_selfloop;
     vector <Vertex> vtxList;
-    map<unsigned, string> m_mapIndex2Id;
-    map<string, unsigned> m_mapId2Index;
-    map<string, unsigned> m_mapValue2Type;
-    map<unsigned, string> m_mapType2Value;
-
-    uint_mat_t m_groupConnNumMatrix;
-    double_mat_t m_groupConnMatrix;
-    uint_vec_t m_groupCardi;
+    su_map_t m_mapId2Index;
+    su_map_t m_mapValue2Type;
 
     class Vertex {
         friend class Graph;

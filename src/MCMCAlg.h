@@ -24,24 +24,12 @@ private:
     static double stabRatio;
 
     unsigned int N_;  // number of nodes of the network
+    unsigned int Q_model_;
+    unsigned int Q_graph_;
 
     int getRandRemainVtx() noexcept;
 
     void getTopVtx() noexcept;
-
-    void initAccumuMargDistri() noexcept;
-
-    void initAccuracyMatrix() noexcept;
-
-    void updateAccuracyMatrix() noexcept;
-
-    void updateAccumuMargDistri(unsigned int mutatevtxno, MCMC &mcmc) noexcept;
-
-    void updateBestTypeModelInPhase() noexcept;
-
-
-    unsigned int m_numTypeModel;
-    unsigned int m_numTypeGraph;
 
     unsigned int m_numOptInit;
     long m_numOptStep;
@@ -53,6 +41,7 @@ private:
 
     set<unsigned int> m_topVtxSet;
     set<unsigned int> m_remainVtxSet;
+
     uint_vec_t m_topVtxSeq;
 
     const Graph &m_graph;
@@ -66,18 +55,6 @@ private:
     long m_curStep;
 
     unsigned int m_curInit;
-
-    float_mat_t m_accuracyMatrix;
-    float_mat_t m_accumuMargDistri;
-    uint_vec_t m_bestClfcInPhase;
-
-    double m_dSumLHvalueInPhase;
-
-    long m_lNumLHvalueInPhase;
-
-    double m_bestLLHvalueInPhase;
-
-
 };
 
 #endif

@@ -13,11 +13,7 @@ public:
 
     void initVtxClassifiMatrix();
 
-    void initGroupConnMatrix() { m_typeModel.initGroupConnMatrix(); }
-
     void updateVtxClassifiMatrix();
-
-    void updateGroupConnMatrix() { m_typeModel.updateGroupConnMatrix(); }
 
     double **getVtxClassifiMatrix();
 
@@ -29,13 +25,9 @@ public:
 
     void updateBestTypeModel();
 
-    double getBestLHvalue() const { return m_bestLLHvalue; }
-
     const TypeModel &getTypeModel() const { return m_typeModel; }
 
     const vector<pair<unsigned, double>> &getLHVariPairs() const { return m_LHVariPairs; }
-
-    double getLHvalue() { return m_logLikelihoodValue; }
 
     vector<pair<unsigned, double>> m_LHVariPairs;
     double_vec_t m_LLHVariTable;
@@ -81,8 +73,8 @@ private:
     unsigned int m_maxsizeLogtable;
     TypeModel &m_typeModel;
 
-    unsigned int m_numVtx;
-    unsigned int m_numType;
+    unsigned int N_;
+    unsigned int Q_;
 
     unsigned int m_mutateVtxNo;
     unsigned int m_targetType;

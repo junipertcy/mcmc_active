@@ -1,20 +1,20 @@
 #include "Learner.h"
+#include "output_functions.h"
 #include "Utility.cpp"
 
-const unsigned int Learner::QUERYSTRATEGY = 1;
 
 Learner::Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned int> &topVtxSet):
-        m_MC_A(mca), m_MC_B(mcb), m_topVtxSet(topVtxSet)
+        m_MC_A(mca),
+        m_MC_B(mcb),
+        m_topVtxSet(topVtxSet)
 {
-    m_numVtx = mca.getTypeModel().getGraph().getNumVtx();
-    m_numType = mca.getTypeModel().getNumType();
+//    m_MC_A = std::make_unique<MCMC>(*mca);
+//    m_MC_B = *mcb;
 
-    m_arrayTopVtxNo.resize(m_numVtx);
-    m_arrayVtxNo.resize(m_numVtx);
-    m_arrayLearnScores.resize(m_numVtx);
+    N_ = mca.getTypeModel().getGraph().getNumVtx();
+    Q_ = mca.getTypeModel().getNumType();
 
-    m_arrayVtxNoSort.resize(m_numVtx);
-    m_arrayLearnScoresSort.resize(m_numVtx);
+
 }
 
 unsigned int MutualInfo::getNumVtx() const noexcept { return Learner::getNumVtx(); }
@@ -26,34 +26,42 @@ unsigned int MutualInfo::getNumTypeModel() const noexcept { return Learner::getN
 void MutualInfo::resetForNextInit() noexcept { ; }
 
 MutualInfo::MutualInfo(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet) : Learner(mca, mcb, topVtxSet) {
-    m_accumuCondEntropy.resize(m_numVtx);
-    m_numAccumuCondEntropy.resize(m_numVtx);
-    m_accumuMargDistri.resize(m_numVtx);
+    m_accumuCondEntropy.resize(N_);
+    m_numAccumuCondEntropy.resize(N_);
+    m_accumuMargDistri.resize(N_);
 
-    for (unsigned int i = 0; i < m_numVtx; ++i) {
-        m_accumuMargDistri[i].resize(m_numType);  // number of groups
+    for (unsigned int i = 0; i < N_; ++i) {
+        m_accumuMargDistri[i].resize(Q_);  // number of groups
     }
 }
 
 
 void MutualInfo::resetForNextPhase() noexcept {
-
-    unsigned i, j;
-    for (i = 0; i < m_numVtx; i++) {
-        for (j = 0; j < m_numType; j++) {
+    for (unsigned int i = 0; i < N_; i++) {
+        for (unsigned int j = 0; j < Q_; j++) {
             m_accumuMargDistri[i][j] = 0.0;
         }
     }
-    for (i = 0; i < m_numVtx; i++) {
+    for (unsigned int i = 0; i < N_; i++) {
         m_accumuCondEntropy[i] = 0.0;
         m_numAccumuCondEntropy[i] = 0;
     }
 }
 
-unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned numTop) noexcept {
-    unsigned i, j;
+unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexcept {
+    unsigned i, j, m_arraysize;
     double margEntropy, condEntropy, mutualEntropy;
-    for (i = 0, m_arraysize = 0; i < m_numVtx; i++) {
+
+    uint_vec_t m_arrayTopVtxNo; //some query strategies may output more than "numTop" vertices
+    m_arrayTopVtxNo.resize(N_);
+
+    uint_vec_t m_arrayVtxNoSort;
+    m_arrayVtxNoSort.resize(N_);
+
+    double_vec_t m_arrayLearnScoresSort;
+    m_arrayLearnScoresSort.resize(N_);
+
+    for (i = 0, m_arraysize = 0; i < N_; ++i) {
         if (m_topVtxSet.count(i)) {
             continue;
         }
@@ -62,56 +70,60 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned numTop) noexcept {
             continue;
         }
         condEntropy = m_accumuCondEntropy[i] / (double) m_numAccumuCondEntropy[i];
-
+//        output_vec<float_vec_t>(m_numAccumuCondEntropy);
         // To normalize the accumulated Marginal Distribution
         double dSum = 0.0;
-        for (j = 0; j < m_numType; j++) {
+        for (j = 0; j < Q_; ++j) {
             dSum += m_accumuMargDistri[i][j];
         }
         if (dSum == 0.0) {
             cerr << "need more MCMC steps" << endl;
             continue;
         }
-        for (j = 0; j < m_numType; j++) {
+        for (j = 0; j < Q_; ++j) {
             m_accumuMargDistri[i][j] /= dSum;
         }
-        margEntropy = entropy(m_accumuMargDistri[i], m_numType);  // Now, we can directly compute the average entropy
+        margEntropy = entropy(m_accumuMargDistri[i], Q_);  // Now, we can directly compute the average entropy
 
         mutualEntropy = margEntropy - condEntropy;
-        m_arrayLearnScores[m_arraysize] = mutualEntropy;
         m_arrayLearnScoresSort[m_arraysize] = mutualEntropy;
-        m_arrayVtxNo[m_arraysize] = i;
         m_arrayVtxNoSort[m_arraysize++] = i;
     }
+
     quicksort<double_vec_t, uint_vec_t>(m_arrayLearnScoresSort, m_arrayVtxNoSort, 0, m_arraysize - 1);
-    m_numtop = 0;
+//    std::clog << "----\n";
+//    std::clog << "The gain in mutual information (the more the better) of each node is: \n";
+    unsigned int m_numtop = 0;
     for (i = m_arraysize - 1; m_numtop < numTop; --i) {
         m_arrayTopVtxNo[m_numtop++] = m_arrayVtxNoSort[i];
     }
-    cout << "tops:" << endl;
+
+    std::clog << "tops:" << endl;
     for (i = 0; i < m_numtop; i++) {
         arrayTop[i] = m_arrayTopVtxNo[i];
-        cout << arrayTop[i] << '\t';
+        clog << arrayTop[i] << '\t';
     }
-    cout << endl;
+    std::clog << endl;
     return m_numtop;
 }
 
 void MutualInfo::updateData() noexcept {
-    unsigned mutatevtxno_a = m_MC_A.getMutateVtx();
-    unsigned mutatevtxno_b = m_MC_B.getMutateVtx();
+    unsigned int mutatevtxno_a = m_MC_A.getMutateVtx();
+    unsigned int mutatevtxno_b = m_MC_B.getMutateVtx();
     const vector <pair<unsigned int, double>> &lhvpairs_a = m_MC_A.getLHVariPairs();
     const vector <pair<unsigned int, double>> &lhvpairs_b = m_MC_B.getLHVariPairs();
 
     double_vec_t probarray;
     probarray.resize(lhvpairs_a.size());
 
-    for (unsigned int i = 0; i < lhvpairs_a.size(); i++) {
-        m_accumuMargDistri[mutatevtxno_a][lhvpairs_a[i].first] += lhvpairs_a[i].second;
+    for (auto la: lhvpairs_a) {
+        m_accumuMargDistri[mutatevtxno_a][la.first] += la.second;
     }
-    for (unsigned int i = 0; i < lhvpairs_b.size(); i++) {
-        m_accumuMargDistri[mutatevtxno_b][lhvpairs_b[i].first] += lhvpairs_b[i].second;
+
+    for (auto lb: lhvpairs_b) {
+        m_accumuMargDistri[mutatevtxno_b][lb.first] += lb.second;
     }
+
     for (unsigned int i = 0; i < lhvpairs_a.size(); i++) {
         probarray[i] = lhvpairs_a[i].second;
     }

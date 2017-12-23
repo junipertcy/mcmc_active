@@ -9,9 +9,9 @@
 
 using namespace std;
 
-using valType_uu = std::map<unsigned,unsigned>::value_type;
-using valType_us = std::map<unsigned,string>::value_type;
-using valType_su = std::map<string,unsigned>::value_type;
+using uu_map_t = std::map<unsigned int,unsigned int>;
+using us_map_t = std::map<unsigned int,string>;
+using su_map_t = std::map<string,unsigned int>;
 
 using uint_vec_t = std::vector<unsigned int>;
 using int_vec_t = std::vector<int>;

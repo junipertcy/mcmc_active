@@ -11,8 +11,8 @@ Graph::Graph(string sGraphFileName) {
              << sGraphFileName << endl;
     }
     set<unsigned int> selfloopVtxSet;
-    m_numVtx = 0;
-    m_numType = 0;
+    N_ = 0;
+    Q_ = 0;
     set <string> seenIds;
     set <string> seenValues;
     string word;
@@ -23,15 +23,12 @@ Graph::Graph(string sGraphFileName) {
     string targetid;
     unsigned int sourceindex;
     unsigned int targetindex;
-    setSelfloop(false);
-    setDirected(false);
     while (infile >> word) {
         if (word == "directed") {
             infile >> word;
             if (word == "1") {
-                this->setDirected(true);
-            } else {
-                this->setDirected(false);
+                std::cerr << "Directed network is not supported. \n";
+                throw;
             }
             break;
         }
@@ -56,23 +53,20 @@ Graph::Graph(string sGraphFileName) {
             if (seenIds.count(id)) {
                 continue;
             } else {
-                vtx.setIndex(m_numVtx);
-                m_mapId2Index.insert(valType_su(id, m_numVtx));
+                vtx.setIndex(N_);
+                m_mapId2Index.insert(su_map_t::value_type(id, N_));
                 seenIds.insert(id);
             }
             if (seenValues.count(value)) {
                 type = m_mapValue2Type[value];
                 vtx.setType(type);
             } else {
-                type = m_numType;
-                vtx.setType(m_numType);
-                m_mapValue2Type.insert(valType_su(value, m_numType));
+                vtx.setType(Q_);
+                m_mapValue2Type.insert(su_map_t::value_type(value, Q_));
                 seenValues.insert(value);
-                m_numType++;
+                Q_++;
             }
-            m_mapIndex2Id.insert(valType_us(m_numVtx, id));
-            m_mapType2Value.insert(valType_us(type, value));
-            m_numVtx++;
+            N_++;
             this->vtxList.push_back(vtx);
             /*************************/
 
@@ -101,8 +95,8 @@ Graph::Graph(string sGraphFileName) {
                 continue;
             }
             if (sourceid == targetid) {
-                selfloopVtxSet.insert(sourceindex);
-                setSelfloop(true);
+                std::cerr << "Directed network is not supported. \n";
+                throw;
             }
             vtxList[sourceindex].addTarget(targetindex);
             vtxList[targetindex].addSource(sourceindex);
@@ -110,101 +104,22 @@ Graph::Graph(string sGraphFileName) {
             vtxList[targetindex].addTarget(sourceindex);
         }
     }
-
     infile.close();
 
-    vtxSelfloopFlag.assign(m_numVtx, 0);
-    if (m_selfloop) {
-        for (i = 0; i < m_numVtx; i++) {
-            if (selfloopVtxSet.count(i))
-                vtxSelfloopFlag[i] = 1;
-        }
-    }
-
-    m_groupConnNumMatrix.resize(m_numType);
-    for (i = 0; i < m_numType; i++) {
-        m_groupConnNumMatrix[i].resize(m_numType);
-    }
-    m_groupCardi.resize(m_numType);
-    m_groupConnMatrix.resize(m_numType);
-
-    for (i = 0; i < m_numType; i++) {
-        m_groupConnMatrix[i].resize(m_numType);
-    }
-
-    calcNumEdges();
-
-    calcGroupConnNumMatrix();
-    calcGroupConnMatrix();
-}
-
-void Graph::calcNumEdges() {
     unsigned int numEgs = 0;
-    for (auto const &i: vtxList) {
-        numEgs += i.getOutDegree();
+    for (auto const &vtx: vtxList) {
+        numEgs += vtx.getOutDegree();
     }
-    m_numEgs = numEgs / 2;
+    E_ = numEgs / 2;
 }
 
-void Graph::calcGroupConnNumMatrix() {
-    unsigned int stype, ttype;
-
-    for (unsigned int i = 0; i < m_numType; i++) {
-        for (unsigned int j = 0; j < m_numType; j++) {
-            m_groupConnNumMatrix[i][j] = 0;
-        }
-    }
-
-    for (unsigned int i = 0; i < m_numType; i++) {
-        m_groupCardi[i] = 0;
-    }
-
-    for (unsigned int i = 0; i < vtxList.size(); i++) {
-        const set<unsigned> &edges = vtxList[i].getTargets();
-
-        stype = vtxList[i].getType();
-        m_groupCardi[stype]++;
-
-        for (auto const &k: edges) {
-            ttype = vtxList[k].getType();
-            if ((!isDirected()) && (ttype == stype) && (k > i))
-                continue;
-            m_groupConnNumMatrix[stype][ttype]++;
-        }
-    }
-}
-
-void Graph::calcGroupConnMatrix() {
-    for (unsigned int i = 0; i < m_numType; i++) {
-        for (unsigned int j = i; j < m_numType; j++) {
-            if (m_groupConnNumMatrix[i][j] == 0) {
-                m_groupConnMatrix[i][j] = 0.0;
-                continue;
-            }
-            if (i == j) {
-                m_groupConnMatrix[i][i] = ((double) (2 * m_groupConnNumMatrix[i][i])) /
-                                          (((double) m_groupCardi[i]) *
-                                           ((double) (m_groupCardi[i] - 1))); //  2eii/(ni*(ni-1))
-            } else {
-                m_groupConnMatrix[i][j] = ((double) m_groupConnNumMatrix[i][j]) / (((double) m_groupCardi[i]) *
-                                                                                   ((double) (m_groupCardi[j]))); //  eij/(ni*nj)
-            }
-        }
-    }
-    for (unsigned int i = 1; i < m_numType; i++) {
-        for (unsigned int j = 0; j < i; j++) {
-            m_groupConnMatrix[i][j] = m_groupConnMatrix[j][i];
-        }
-    }
-}
-
-const Graph::Vertex &Graph::getVertex(unsigned vtxno) const {
-    if (vtxno < m_numVtx)
+const Graph::Vertex &Graph::getVertex(unsigned int vtxno) const {
+    if (vtxno < N_)
         return vtxList[vtxno];
     else {
         cerr << "Cannot get the vertex, the vertex no is too large." << endl
              << "-- getVertex()::Graph" << endl;
-        return vtxList[m_numVtx - 1];
+        return vtxList[N_ - 1];
     }
 }
 
@@ -213,9 +128,5 @@ const unsigned Graph::getVtxDegree(unsigned vtxno) const {
         cerr << "the vtx no provided is illegal.-- Graph::getVtxDegree()" << endl;
         return 0;
     }
-    if (vtxSelfloopFlag[vtxno] == 0) {
-        return vtxList[vtxno].getInDegree();
-    } else {
-        return vtxList[vtxno].getInDegree() + 1;
-    }
+    return vtxList[vtxno].getInDegree();
 }

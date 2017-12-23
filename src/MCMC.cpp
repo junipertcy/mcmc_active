@@ -8,30 +8,30 @@ MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel
                                                                      m_groupCorrected(
                                                                              groupcorrected)//,m_bestTypeModel(tm)
 {
-    m_numVtx = tm.getGraph().getNumVtx();
-    m_numType = tm.getNumType();
+    N_ = tm.getGraph().getNumVtx();
+    Q_ = tm.getNumType();
 
     m_transProbSelect.resize(tm.getNumActiveType());
 
-    m_maxsizeLogtable = m_numVtx * m_numVtx + 1;
+    m_maxsizeLogtable = N_ * N_ + 1;
     initLogTable(m_maxsizeLogtable);
-    initLogGammaTable(2 + m_numVtx * m_numVtx);
+    initLogGammaTable(2 + N_ * N_);
 
-    dvtxClassifiMatrix = new double *[m_numVtx];
-    for (unsigned int i = 0; i < m_numVtx; i++) {
-        dvtxClassifiMatrix[i] = new double[m_numType];
+    dvtxClassifiMatrix = new double *[N_];
+    for (unsigned int i = 0; i < N_; i++) {
+        dvtxClassifiMatrix[i] = new double[Q_];
     }
 
-    m_bestEdgeConnMatrix.resize(m_numType);
-    for (unsigned int i = 0; i < m_numType; i++) {
-        m_bestEdgeConnMatrix[i].resize(m_numType);
+    m_bestEdgeConnMatrix.resize(Q_);
+    for (unsigned int i = 0; i < Q_; i++) {
+        m_bestEdgeConnMatrix[i].resize(Q_);
     }
-    m_bestGroupCardi.resize(m_numType);
-    m_bestVtxTypeTable.resize(m_numVtx);
+    m_bestGroupCardi.resize(Q_);
+    m_bestVtxTypeTable.resize(N_);
     MAXLOGDOUBLE = log(numeric_limits<double>::max()) - 50;//-50 prevents the accumulation exceeding double limit
     MINLOGDOUBLE = log(numeric_limits<double>::min()) + 50;//
 
-    m_LLHVariTable.resize(m_numType);
+    m_LLHVariTable.resize(Q_);
 }
 
 unsigned MCMC::getTargetType(unsigned int mutateVtxNo) noexcept {
@@ -41,9 +41,7 @@ unsigned MCMC::getTargetType(unsigned int mutateVtxNo) noexcept {
 
 void MCMC::calcLHVari(unsigned int vtxNo, TypeModel &typeModel) noexcept {
     m_LHVariPairs.clear();
-    bool isDirected = typeModel.getGraph().isDirected();
-//    std::clog << "======== isDirected is : " << !isDirected << "\n";
-    if (!isDirected && m_blockModelType == 1) {
+    if (m_blockModelType == 1) {
         calcLHVariUDM1(vtxNo, typeModel);
     } else {
         cerr << "unrecognized model type! -- MCMC::calcLHVari()" << endl;
@@ -71,7 +69,7 @@ void MCMC::calcLHVariUDM1(unsigned int v, TypeModel &typeModel) noexcept {
         } else {
             LHVari = 0.0;
         }
-        for (o = 0; o < m_numType; o++) {
+        for (o = 0; o < Q_; o++) {
             if (o == s || o == t)
                 continue;
             //s<->o
@@ -192,7 +190,7 @@ double MCMC::getLogFac(unsigned a) {
     return m_logfactable[a];
 }
 
-double MCMC::getLog(unsigned a) {
+double MCMC::getLog(unsigned int a) {
     if (a > m_maxsizeLogtable) {
         cerr << "need more memory for logtable -- getLog()\t" << a << endl;
 //        delete[] m_logtable; //TODO
@@ -203,8 +201,8 @@ double MCMC::getLog(unsigned a) {
 }
 
 void MCMC::initVtxClassifiMatrix() {
-    for (unsigned int i = 0; i < m_numVtx; ++i) {
-        for (unsigned int j = 0; j < m_numType; ++j) {
+    for (unsigned int i = 0; i < N_; ++i) {
+        for (unsigned int j = 0; j < Q_; ++j) {
             dvtxClassifiMatrix[i][j] = 0.0;
         }
     }
@@ -218,13 +216,13 @@ void MCMC::updateVtxClassifiMatrix() {//should be called after mutateTypeModel()
 
 double **MCMC::getVtxClassifiMatrix() {
     double dSum;
-    for (unsigned int i = 0; i < m_numVtx; i++) {
+    for (unsigned int i = 0; i < N_; i++) {
         dSum = 0.0;
-        for (unsigned int j = 0; j < m_numType; j++) {
+        for (unsigned int j = 0; j < Q_; j++) {
             dSum += dvtxClassifiMatrix[i][j];
         }
         if (dSum != 0.0) {
-            for (unsigned int j = 0; j < m_numType; j++)
+            for (unsigned int j = 0; j < Q_; j++)
                 dvtxClassifiMatrix[i][j] /= dSum;
         }
     }
@@ -239,13 +237,13 @@ void MCMC::randInitTypeModel(const set<unsigned> &topVtxSet) {
 void MCMC::initBestTypeModel() {
     unsigned i, j;
     m_bestLLHvalue = calcLikelihood(m_typeModel);
-    for (i = 0; i < m_numType; i++) {
-        for (j = 0; j < m_numType; j++) {
+    for (i = 0; i < Q_; i++) {
+        for (j = 0; j < Q_; j++) {
             m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
         }
         m_bestGroupCardi[i] = m_typeModel.m_groupCardiTable[i];
     }
-    for (i = 0; i < m_numVtx; i++) {
+    for (i = 0; i < N_; i++) {
         m_bestVtxTypeTable[i] = m_typeModel.getVtxType(i);
     }
 }
@@ -254,13 +252,13 @@ void MCMC::updateBestTypeModel() {
     unsigned i, j;
     if (m_logLikelihoodValue > m_bestLLHvalue) {
         m_bestLLHvalue = calcLikelihood(m_typeModel);
-        for (i = 0; i < m_numType; i++) {
-            for (j = 0; j < m_numType; j++) {
+        for (i = 0; i < Q_; i++) {
+            for (j = 0; j < Q_; j++) {
                 m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
             }
             m_bestGroupCardi[i] = m_typeModel.m_groupCardiTable[i];
         }
-        for (i = 0; i < m_numVtx; i++) {
+        for (i = 0; i < N_; i++) {
             m_bestVtxTypeTable[i] = m_typeModel.getVtxType(i);
         }
     }

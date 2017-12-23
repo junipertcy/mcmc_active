@@ -16,13 +16,13 @@ public:
     TypeModel(const Graph &graph, unsigned numtype/*including frozen types*/,
               set<unsigned> &frozentypes/*frozen types defined in graph*/);
 
-    unsigned getNumType() const { return m_numType; }
+    unsigned int getNumType() const noexcept { return m_numType; }
 
-    unsigned getNumActiveType() const { return m_numActiveType; }
+    unsigned int getNumActiveType() const noexcept { return m_numActiveType; }
 
-    unsigned getVtxType(unsigned vtxno) const { return m_vtxTypeTable[vtxno]; }
+    unsigned int getVtxType(unsigned int vtxno) const noexcept { return m_vtxTypeTable[vtxno]; }
 
-    bool isGTypeFrozen(unsigned gtype) const {
+    bool isGTypeFrozen(unsigned int gtype) const noexcept {
         if (m_frozenTypesInGraph.count(gtype) != 0)
             return true;
         else
@@ -39,24 +39,16 @@ public:
     unsigned **m_numTargetGroupVtx;//m_numTargetGroupVtx[i][v] number of vertices in group i that has target of vertex v
 
 private:
-    uint_mat_t groupConnMatrix;
-    float_mat_t lvtxClassifiMatrix;
-    float_mat_t dvtxClassifiMatrix;
-
-    void initGroupConnMatrix();
-
-    void updateGroupConnMatrix();
-
-    void randInitGroups(const set<unsigned int> &topVtxSet);
-
-    void mutate(unsigned int v, unsigned int t);
-
     unsigned int m_numActiveType;
     unsigned int m_numType;
-    set<unsigned> m_frozenTypesInGraph;
-    map<unsigned, unsigned> m_mapFzntyMty2Gty;
-    map<unsigned, unsigned> m_mapFzntyGty2Mty;
-    long long numAccuGCM;
+    set<unsigned int> m_frozenTypesInGraph;
+    uu_map_t m_mapFzntyMty2Gty;
+    uu_map_t m_mapFzntyGty2Mty;
+
+    void randInitGroups(const set<unsigned int> &topVtxSet) noexcept;
+
+    void mutate(unsigned int v, unsigned int t) noexcept;
+
 };
 
 #endif
