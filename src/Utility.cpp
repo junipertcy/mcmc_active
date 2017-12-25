@@ -21,41 +21,6 @@ static double entropy(double_vec_t dist, unsigned int size) {
     return temp;
 };
 
-template<typename VectorElemType, typename VectorIndexType>
-static decltype(auto) qspartition(VectorElemType &A, VectorIndexType &B, int p, int r) {
-    decltype(auto) x = A[r];
-    decltype(auto) tempelem = A[0];  // TODO: better ways?
-    decltype(auto) tempindex = B[0];
-    int i = p - 1;
-    for (int j = p; j <= r - 1; j++) {
-        if (A[j] <= x) {
-            i++;
-            tempelem = A[i];
-            tempindex = B[i];
-            A[i] = A[j];
-            B[i] = B[j];
-            A[j] = tempelem;
-            B[j] = tempindex;
-        }
-    }
-    tempelem = A[i + 1];
-    tempindex = B[i + 1];
-    A[i + 1] = A[r];
-    B[i + 1] = B[r];
-    A[r] = tempelem;
-    B[r] = tempindex;
-    return i + 1;
-};
-
-template<typename VectorElemType, typename VectorIndexType>
-static void quicksort(VectorElemType &A, VectorIndexType &B, int p, int r) {
-    if (p < r) {
-        int q = qspartition(A, B, p, r);
-        quicksort(A, B, p, q - 1);
-        quicksort(A, B, q + 1, r);
-    }
-};
-
 static int getIndexProb(double_vec_t &probarray, int dimension) {
     int m;
     int l = 0;

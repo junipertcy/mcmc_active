@@ -3,6 +3,8 @@
 
 #include "MCMC.h"
 
+bool compare(const pair<double,unsigned int>&i, const pair<double,unsigned int>&j) noexcept;
+
 class Learner {
 
 public:
@@ -52,6 +54,7 @@ public:
     unsigned int getNumTypeGraph() const noexcept override;
 
     unsigned int getNumTypeModel() const noexcept override;
+
 
 private:
     double_mat_t m_accumuMargDistri;

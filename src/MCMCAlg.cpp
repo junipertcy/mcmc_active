@@ -1,5 +1,6 @@
 #include "MCMCAlg.h"
 #include "Utility.cpp"
+#include "output_functions.h"
 
 double MCMCAlg::stabRatio = 0.5;
 unsigned int MCMCAlg::numAccuracyBlock = 10;

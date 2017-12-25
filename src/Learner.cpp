@@ -1,20 +1,18 @@
+#include <algorithm> // For sort()
 #include "Learner.h"
 #include "output_functions.h"
 #include "Utility.cpp"
 
+bool compare(const pair<double,unsigned int>&i, const pair<double,unsigned int>&j) noexcept {
+    return i.first > j.first;
+}
 
 Learner::Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned int> &topVtxSet):
         m_MC_A(mca),
         m_MC_B(mcb),
-        m_topVtxSet(topVtxSet)
-{
-//    m_MC_A = std::make_unique<MCMC>(*mca);
-//    m_MC_B = *mcb;
-
+        m_topVtxSet(topVtxSet) {
     N_ = mca.getTypeModel().getGraph().getNumVtx();
     Q_ = mca.getTypeModel().getNumType();
-
-
 }
 
 unsigned int MutualInfo::getNumVtx() const noexcept { return Learner::getNumVtx(); }
@@ -35,7 +33,6 @@ MutualInfo::MutualInfo(const MCMC &mca, const MCMC &mcb, const set<unsigned> &to
     }
 }
 
-
 void MutualInfo::resetForNextPhase() noexcept {
     for (unsigned int i = 0; i < N_; i++) {
         for (unsigned int j = 0; j < Q_; j++) {
@@ -49,20 +46,13 @@ void MutualInfo::resetForNextPhase() noexcept {
 }
 
 unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexcept {
-    unsigned i, j, m_arraysize;
+    unsigned i, j;
     double margEntropy, condEntropy, mutualEntropy;
-
-    uint_vec_t m_arrayTopVtxNo; //some query strategies may output more than "numTop" vertices
-    m_arrayTopVtxNo.resize(N_);
-
-    uint_vec_t m_arrayVtxNoSort;
-    m_arrayVtxNoSort.resize(N_);
-
-    double_vec_t m_arrayLearnScoresSort;
-    m_arrayLearnScoresSort.resize(N_);
-
-    for (i = 0, m_arraysize = 0; i < N_; ++i) {
+    vector <pair<double,unsigned int> > nodes_mi_gains;
+    nodes_mi_gains.resize(N_);
+    for (i = 0; i < N_; ++i) {
         if (m_topVtxSet.count(i)) {
+            nodes_mi_gains[i] = pair<double,unsigned int>(0., i);
             continue;
         }
         if (m_numAccumuCondEntropy[i] == 0) {
@@ -70,7 +60,6 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
             continue;
         }
         condEntropy = m_accumuCondEntropy[i] / (double) m_numAccumuCondEntropy[i];
-//        output_vec<float_vec_t>(m_numAccumuCondEntropy);
         // To normalize the accumulated Marginal Distribution
         double dSum = 0.0;
         for (j = 0; j < Q_; ++j) {
@@ -86,25 +75,16 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
         margEntropy = entropy(m_accumuMargDistri[i], Q_);  // Now, we can directly compute the average entropy
 
         mutualEntropy = margEntropy - condEntropy;
-        m_arrayLearnScoresSort[m_arraysize] = mutualEntropy;
-        m_arrayVtxNoSort[m_arraysize++] = i;
+        nodes_mi_gains[i] = pair<double,unsigned int>(mutualEntropy, i);
     }
-
-    quicksort<double_vec_t, uint_vec_t>(m_arrayLearnScoresSort, m_arrayVtxNoSort, 0, m_arraysize - 1);
-//    std::clog << "----\n";
-//    std::clog << "The gain in mutual information (the more the better) of each node is: \n";
-    unsigned int m_numtop = 0;
-    for (i = m_arraysize - 1; m_numtop < numTop; --i) {
-        m_arrayTopVtxNo[m_numtop++] = m_arrayVtxNoSort[i];
-    }
-
+    std::sort(nodes_mi_gains.begin(),nodes_mi_gains.end(), compare);
     std::clog << "tops:" << endl;
-    for (i = 0; i < m_numtop; i++) {
-        arrayTop[i] = m_arrayTopVtxNo[i];
+    for (i = 0; i < numTop; i++) {
+        arrayTop[i] = nodes_mi_gains.at(i).second;
         clog << arrayTop[i] << '\t';
     }
     std::clog << endl;
-    return m_numtop;
+    return numTop;
 }
 
 void MutualInfo::updateData() noexcept {

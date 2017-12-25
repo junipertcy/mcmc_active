@@ -249,16 +249,15 @@ void MCMC::initBestTypeModel() {
 }
 
 void MCMC::updateBestTypeModel() {
-    unsigned i, j;
     if (m_logLikelihoodValue > m_bestLLHvalue) {
         m_bestLLHvalue = calcLikelihood(m_typeModel);
-        for (i = 0; i < Q_; i++) {
-            for (j = 0; j < Q_; j++) {
+        for (unsigned int i = 0; i < Q_; i++) {
+            for (unsigned int j = 0; j < Q_; j++) {
                 m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
             }
             m_bestGroupCardi[i] = m_typeModel.m_groupCardiTable[i];
         }
-        for (i = 0; i < N_; i++) {
+        for (unsigned int i = 0; i < N_; i++) {
             m_bestVtxTypeTable[i] = m_typeModel.getVtxType(i);
         }
     }
