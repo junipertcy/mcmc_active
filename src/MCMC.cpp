@@ -147,7 +147,7 @@ unsigned MCMC::calcTargetType() noexcept {
 }
 
 //m_logfactable[i]=ln(i!)
-void MCMC::initLogTable(unsigned size) noexcept {
+void MCMC::initLogTable(unsigned int size) noexcept {
     m_logfactable.resize(size + 1);
     m_logtable.resize(size + 1);
     m_logfactable[0] = 0;
@@ -159,7 +159,7 @@ void MCMC::initLogTable(unsigned size) noexcept {
 }
 
 //log_gamma(0),log_gamma(0.5),log_gamma(1)...; log_gamma(i)=m_loggammatable[2i];
-void MCMC::initLogGammaTable(unsigned size) noexcept {
+void MCMC::initLogGammaTable(unsigned int size) noexcept {
     m_loggammatable.resize(size + 1);
     m_loggammatable[0] = 0;  //dummy, will never be used;
     m_loggammatable[1] = log(sqrt(PI));  //log_gamma(0.5)
@@ -169,7 +169,7 @@ void MCMC::initLogGammaTable(unsigned size) noexcept {
 }
 
 // return  ln(a!/b!)
-double MCMC::getLogDivFac(unsigned a, unsigned b) {
+double MCMC::getLogDivFac(unsigned int a, unsigned int b) {
     if (a > m_maxsizeLogtable || b > m_maxsizeLogtable) {
         cerr << "need more memory for logtable--getLogDivFac()" << endl;
 //        delete[] m_logfactable;  // TODO: how to delete float_vec_t properly? Is it even needed?
@@ -180,7 +180,7 @@ double MCMC::getLogDivFac(unsigned a, unsigned b) {
 }
 
 // return  ln(a!)
-double MCMC::getLogFac(unsigned a) {
+double MCMC::getLogFac(unsigned int a) {
     if (a > m_maxsizeLogtable) {
         cerr << "need more memory for logtable -- getLogFac()\t" << a << endl;
 //        delete[] m_logfactable;  //TODO: proper delete??
@@ -263,7 +263,7 @@ void MCMC::updateBestTypeModel() {
     }
 }
 
-void MCMC::mutateTypeModel(unsigned v, unsigned t) {
+void MCMC::mutateTypeModel(unsigned int v, unsigned int t) {
     m_mutateVtxNo = v;
     m_targetType = t;
     m_sourceType = m_typeModel.getVtxType(m_mutateVtxNo);

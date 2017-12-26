@@ -43,6 +43,8 @@ int main(int argc, char const *argv[]) {
     if (var_map.count("input_graph") == 0) {
         std::cout << "input_graph (*.gml file) is required (-i flag)\n";
         return 1;
+    } else {
+        std::clog << "gml_path: " << graph_path << "\n";
     }
 
     // "modelType" indicates the type of the underlying block model. We have quite a lot block models available in this package.
@@ -60,7 +62,7 @@ int main(int argc, char const *argv[]) {
     unsigned int learningMethod = 1; // indicates which active learner is used: 1-MutualInfo, 2-AvgAgree, 3-RandomLearner, 4-TopSeqLearner, 5-MaxDegree, 6-MaxBtwn.
 
     for (unsigned int i = 0; i < runs; ++i) {
-        clog << "Run # " << i + 1 << " is running..." << endl;
+        std::clog << "Run #" << i + 1 << " (out of " << runs <<") is running..." << "\n";
         std::unique_ptr<Graph>graph = std::make_unique<Graph>(graph_path);
         std::unique_ptr<MCMCAlg>mcmc_algorithm = std::make_unique<MCMCAlg>(
                 *graph, numTypeInModel, frozentypes, numOptInit, numOptStep, numLearnerInit,

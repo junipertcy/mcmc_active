@@ -77,13 +77,21 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
         mutualEntropy = margEntropy - condEntropy;
         nodes_mi_gains[i] = pair<double,unsigned int>(mutualEntropy, i);
     }
-    std::sort(nodes_mi_gains.begin(),nodes_mi_gains.end(), compare);
-    std::clog << "tops:" << endl;
-    for (i = 0; i < numTop; i++) {
-        arrayTop[i] = nodes_mi_gains.at(i).second;
-        clog << arrayTop[i] << '\t';
+
+    for (unsigned int node_id = 0; node_id < N_; ++node_id) {
+        std::cout << nodes_mi_gains[node_id].first << ",";
     }
-    std::clog << endl;
+    std::cout << "\n";
+
+    std::sort(nodes_mi_gains.begin(),nodes_mi_gains.end(), compare);
+
+    std::clog << "The indexes of the selected node(s) are: ";
+    for (i = 0; i < numTop; ++i) {
+        arrayTop[i] = nodes_mi_gains.at(i).second;
+        clog << arrayTop[i] << ',';
+    }
+    std::clog << "\n";
+
     return numTop;
 }
 
