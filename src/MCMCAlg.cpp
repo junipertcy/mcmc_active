@@ -132,7 +132,7 @@ void MCMCAlg::runOneStep() noexcept {
     //typeModelA
     do {
         mutateVtxNo = (unsigned) getRandRemainVtx();
-        sourceType = m_typeModelA->m_vtxTypeTable[mutateVtxNo];
+        sourceType = m_typeModelA->memberships_[mutateVtxNo];
     } while (m_typeModelA->m_groupCardiTable[sourceType] == 1);
     targetType = m_MC_A->getTargetType(mutateVtxNo);
 
@@ -147,7 +147,7 @@ void MCMCAlg::runOneStep() noexcept {
     //typeModelB
     do {
         mutateVtxNo = (unsigned) getRandRemainVtx();
-        sourceType = m_typeModelB->m_vtxTypeTable[mutateVtxNo];
+        sourceType = m_typeModelB->memberships_[mutateVtxNo];
     } while (m_typeModelB->m_groupCardiTable[sourceType] == 1);
     targetType = m_MC_B->getTargetType(mutateVtxNo);
 

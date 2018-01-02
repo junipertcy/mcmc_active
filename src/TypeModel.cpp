@@ -4,11 +4,12 @@
 TypeModel::TypeModel(const Graph &graph, unsigned numtype, set<unsigned> &frozentypes):
         m_graph(graph), m_numType(numtype)
 {
-    unsigned i;
+    unsigned int i;
     m_numActiveType = numtype - frozentypes.size();
+    std::clog << m_numActiveType << "<--- m_numActiveType\n";
     unsigned int m_numVtx = m_graph.getNumVtx();
 
-    m_vtxTypeTable.resize(m_numVtx);
+    memberships_.resize(m_numVtx);
     m_groupCardiTable.resize(m_numVtx);
     m_groupDegrees.resize(m_numType);
 
@@ -31,6 +32,19 @@ TypeModel::TypeModel(const Graph &graph, unsigned numtype, set<unsigned> &frozen
     }
 }
 
+unsigned int TypeModel::getNumType() const noexcept { return m_numType; }
+
+unsigned int TypeModel::getNumActiveType() const noexcept { return m_numActiveType; }
+
+unsigned int TypeModel::getVtxType(unsigned int vtxno) const noexcept { return memberships_[vtxno]; }
+
+bool TypeModel::isGTypeFrozen(unsigned int gtype) const noexcept {
+    if (m_frozenTypesInGraph.count(gtype) != 0)
+        return true;
+    else
+        return false;
+};
+
 void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) noexcept {
     unsigned i, j;
     unsigned type = 0;
@@ -43,26 +57,27 @@ void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) noexcept {
         }
 
         for (i = 0; i < m_numVtx; i++) {
-            m_vtxTypeTable[i] = 0;
+            memberships_[i] = 0;
         }
 
         for (i = 0; i < m_numType; i++) {
-            set<unsigned> groupSet;
+            set<unsigned int> groupSet;
             this->m_groupSets.push_back(groupSet);
         }
 
         for (i = 0; i < m_numVtx; i++) {
             if (topVtxSet.count(i)) {
-                unsigned gtype = m_graph.getVertex(i).getType();
-                if (this->isGTypeFrozen(gtype))
+                unsigned int gtype = m_graph.getVertex(i).getType();
+                if (this->isGTypeFrozen(gtype)) {
                     type = m_mapFzntyGty2Mty[gtype];
-                else
+                } else {
                     type = gtype;
+                }
             } else {
                 type = (unsigned) randN(m_numActiveType);
             }
             m_groupSets[type].insert(i);
-            m_vtxTypeTable[i] = type;
+            memberships_[i] = type;
             m_groupCardiTable[type]++;
         }
         hasEmptyGroup = false;
@@ -83,7 +98,7 @@ void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) noexcept {
     for (i = 0; i < m_numVtx; i++) {
         const set<unsigned> &targets = m_graph.getVertex(i).getTargets();
         for (setiter = targets.begin(); setiter != targets.end(); setiter++)
-            m_numTargetVtxGroup[i][m_vtxTypeTable[*setiter]]++;
+            m_numTargetVtxGroup[i][memberships_[*setiter]]++;
     }
 
     set<unsigned>::const_iterator siiter;
@@ -131,16 +146,17 @@ void TypeModel::randInitGroups(const set<unsigned> &topVtxSet) noexcept {
     set<unsigned>::const_iterator setuuiter;
     for (i = 0; i < m_numType; i++) {
         setuuiter = m_groupSets[i].begin();
+
         m_groupDegrees[i] = 0;
         for (; setuuiter != m_groupSets[i].end(); setuuiter++) {
-            m_groupDegrees[i] += m_graph.getVtxDegree(*setuuiter);
+            m_groupDegrees[i] += m_graph.get_degree_at_v(*setuuiter);
         }
     }
 }
 
 void TypeModel::mutate(unsigned v, unsigned t) noexcept {
     unsigned o;
-    unsigned s = m_vtxTypeTable[v];
+    unsigned s = memberships_[v];
 
     unsigned lvv = 0;
     //update eij
@@ -177,10 +193,10 @@ void TypeModel::mutate(unsigned v, unsigned t) noexcept {
     m_groupSets[s].erase(v);
     m_groupSets[t].insert(v);
     //update vtxTypeTable: vertex v has new type of t.
-    m_vtxTypeTable[v] = t;
+    memberships_[v] = t;
     //update group degrees
-    m_groupDegrees[s] -= m_graph.getVtxDegree(v);
-    m_groupDegrees[t] += m_graph.getVtxDegree(v);
+    m_groupDegrees[s] -= m_graph.get_degree_at_v(v);
+    m_groupDegrees[t] += m_graph.get_degree_at_v(v);
 
 }
 

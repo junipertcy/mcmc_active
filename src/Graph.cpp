@@ -123,9 +123,9 @@ const Graph::Vertex &Graph::getVertex(unsigned int vtxno) const {
     }
 }
 
-const unsigned Graph::getVtxDegree(unsigned vtxno) const {
+const unsigned int Graph::get_degree_at_v(unsigned int vtxno) const {
     if (vtxno > vtxList.size()) {
-        cerr << "the vtx no provided is illegal.-- Graph::getVtxDegree()" << endl;
+        cerr << "the vtx no provided is illegal.-- Graph::get_degree_at_v()" << endl;
         return 0;
     }
     return vtxList[vtxno].getInDegree();

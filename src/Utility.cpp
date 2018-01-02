@@ -1,5 +1,6 @@
 #include "Global.h"
 #include <cmath>
+#include <random>
 
 //[0,1)
 static double rand01() {

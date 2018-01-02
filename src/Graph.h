@@ -20,7 +20,7 @@ public:
 
     const Vertex &getVertex(unsigned vtxno) const;
 
-    const unsigned getVtxDegree(unsigned vtxno) const;
+    const unsigned int get_degree_at_v(unsigned vtxno) const;
 
 private:
     unsigned int N_;

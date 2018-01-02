@@ -16,21 +16,17 @@ public:
     TypeModel(const Graph &graph, unsigned numtype/*including frozen types*/,
               set<unsigned> &frozentypes/*frozen types defined in graph*/);
 
-    unsigned int getNumType() const noexcept { return m_numType; }
+    unsigned int getNumType() const noexcept;
 
-    unsigned int getNumActiveType() const noexcept { return m_numActiveType; }
+    unsigned int getNumActiveType() const noexcept;
 
-    unsigned int getVtxType(unsigned int vtxno) const noexcept { return m_vtxTypeTable[vtxno]; }
+    unsigned int getVtxType(unsigned int vtxno) const noexcept;
 
-    bool isGTypeFrozen(unsigned int gtype) const noexcept {
-        if (m_frozenTypesInGraph.count(gtype) != 0)
-            return true;
-        else
-            return false;
-    };
+    bool isGTypeFrozen(unsigned int gtype) const noexcept;
 
     vector<set<unsigned int>> m_groupSets;
-    uint_vec_t m_vtxTypeTable;
+    uint_vec_t memberships_;
+    
     uint_vec_t m_groupDegrees;
     uint_vec_t m_groupCardiTable;
     uint_mat_t m_numTargetVtxGroup;

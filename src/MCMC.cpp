@@ -60,8 +60,9 @@ void MCMC::calcLHVariUDM1(unsigned int v, TypeModel &typeModel) noexcept {
     m_LHVariPairs.push_back(lhvariPair);
     m_LLHVariTable[s] = 0.0;
     for (t = 0; t < typeModel.getNumActiveType(); t++) {
-        if (t == s)
+        if (t == s) {
             continue;
+        }
         unsigned int nt = typeModel.m_groupCardiTable[t];
         if (m_groupCorrected) {
             LHVari = (ns - 1) * getLog(ns - 1) + (nt + 1) * getLog(nt + 1) - ns * getLog(ns) -
@@ -90,7 +91,6 @@ void MCMC::calcLHVariUDM1(unsigned int v, TypeModel &typeModel) noexcept {
         unsigned int nvt = typeModel.m_numTargetVtxGroup[v][t];
 
         /* Self-loop is not allowed */
-
         LHVari += getLogDivFac(est - nvt + nvs, est);
         LHVari += getLogDivFac(ns * nt + 1, (ns - 1) * (nt + 1) + 1);
         LHVari += getLogDivFac((ns - 1) * (nt + 1) - est + nvt - nvs, ns * nt - est);
@@ -291,7 +291,7 @@ double MCMC::calcLikelihood(const TypeModel &typemodel) {
         cerr << "unrecognized model type!" << endl;
         return -1;
     }
-    return llhvalue;//-m_initllhvalue;
+    return llhvalue;  //-m_initllhvalue;
 }
 
 //This method returns the likelihood of the current Type Model (model type is 1)
