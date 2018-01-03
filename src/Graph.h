@@ -14,9 +14,9 @@ private:
 public:
     explicit Graph(string sGraphFile);
 
-    unsigned int getNumVtx() const { return N_; }
+    unsigned int get_N() const { return N_; }
 
-    unsigned int getNumType() const { return Q_; }
+    unsigned int get_Q() const { return Q_; }
 
     const Vertex &getVertex(unsigned vtxno) const;
 

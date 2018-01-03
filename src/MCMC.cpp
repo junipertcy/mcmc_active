@@ -1,5 +1,6 @@
 #include "MCMC.h"
 #include "Utility.cpp"
+#include "output_functions.h"
 
 
 double MCMC::PI = 3.141592653589793;
@@ -8,8 +9,8 @@ MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel
                                                                      m_groupCorrected(
                                                                              groupcorrected)//,m_bestTypeModel(tm)
 {
-    N_ = tm.getGraph().getNumVtx();
-    Q_ = tm.getNumType();
+    N_ = tm.getGraph().get_N();
+    Q_ = tm.get_Q();
 
     m_transProbSelect.resize(tm.getNumActiveType());
 
@@ -22,97 +23,105 @@ MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel
         dvtxClassifiMatrix[i] = new double[Q_];
     }
 
-    m_bestEdgeConnMatrix.resize(Q_);
-    for (unsigned int i = 0; i < Q_; i++) {
-        m_bestEdgeConnMatrix[i].resize(Q_);
-    }
-    m_bestGroupCardi.resize(Q_);
-    m_bestVtxTypeTable.resize(N_);
     MAXLOGDOUBLE = log(numeric_limits<double>::max()) - 50;//-50 prevents the accumulation exceeding double limit
     MINLOGDOUBLE = log(numeric_limits<double>::min()) + 50;//
 
-    m_LLHVariTable.resize(Q_);
+    m_LLHVariTable.resize(Q_, 0.);
 }
 
-unsigned MCMC::getTargetType(unsigned int mutateVtxNo) noexcept {
-    calcLHVari(mutateVtxNo, m_typeModel);
-    return calcTargetType();
+unsigned int MCMC::get_selected_vtx() const noexcept { return m_mutateVtxNo; }
+
+const TypeModel &MCMC::getTypeModel() const noexcept { return m_typeModel; }
+
+const vector<pair<unsigned int,double>> &MCMC::get_likelihood_variation_pairs() const noexcept { return m_LHVariPairs; }
+
+unsigned int MCMC::getTargetType(unsigned int mutateVtxNo) noexcept {
+    compute_likelihood(mutateVtxNo, m_typeModel);
+    return compute_gibbs_jump();
 }
 
-void MCMC::calcLHVari(unsigned int vtxNo, TypeModel &typeModel) noexcept {
+void MCMC::compute_likelihood(unsigned int vtxNo, TypeModel &typeModel) noexcept {
     m_LHVariPairs.clear();
     if (m_blockModelType == 1) {
-        calcLHVariUDM1(vtxNo, typeModel);
+        _compute_likelihood(vtxNo, typeModel);
     } else {
         cerr << "unrecognized model type! -- MCMC::calcLHVari()" << endl;
     }
 }
 
 //case 2.1: undirected for model type 1
-void MCMC::calcLHVariUDM1(unsigned int v, TypeModel &typeModel) noexcept {
-    unsigned int s, t, o;
-    s = typeModel.getVtxType(v);
-    unsigned int ns = typeModel.m_groupCardiTable[s];
-    unsigned int nvs = typeModel.m_numTargetVtxGroup[v][s];
+void MCMC::_compute_likelihood(unsigned int vtx, TypeModel &typeModel) noexcept {
+    unsigned int source_group, target_group, q;
+    source_group = typeModel.get_membership(vtx);
+    unsigned int ns = typeModel.n_r_[source_group];
+    unsigned int nvs = typeModel.m_numTargetVtxGroup[vtx][source_group];
 
     double LHVari;
-    pair<unsigned int, double> lhvariPair(s, 0.0);
+    pair<unsigned int, double> lhvariPair(source_group, 0.0);
     m_LHVariPairs.push_back(lhvariPair);
-    m_LLHVariTable[s] = 0.0;
-    for (t = 0; t < typeModel.getNumActiveType(); t++) {
-        if (t == s) {
+
+    m_LLHVariTable[source_group] = 0.0;
+    for (target_group = 0; target_group < typeModel.getNumActiveType(); target_group++) {
+        if (target_group == source_group) {
             continue;
         }
-        unsigned int nt = typeModel.m_groupCardiTable[t];
+        unsigned int nt = typeModel.n_r_[target_group];
         if (m_groupCorrected) {
             LHVari = (ns - 1) * getLog(ns - 1) + (nt + 1) * getLog(nt + 1) - ns * getLog(ns) -
                      nt * getLog(nt);//ns'*log(ns')+nt'*log(nt')-ns*log(ns)-nt*log(nt)
         } else {
             LHVari = 0.0;
         }
-        for (o = 0; o < Q_; o++) {
-            if (o == s || o == t)
+        for (q = 0; q < Q_; q++) {
+            if (q == source_group || q == target_group)
                 continue;
-            //s<->o
-            unsigned int eso = typeModel.m_numEdgesOf2Groups[s][o];
-            unsigned int nvo = typeModel.m_numTargetVtxGroup[v][o];
-            unsigned int no = typeModel.m_groupCardiTable[o];
+
+            //source_group<->q
+            unsigned int eso = typeModel.e_rs_[source_group][q];
+            unsigned int nvo = typeModel.m_numTargetVtxGroup[vtx][q];
+            unsigned int no = typeModel.n_r_[q];
             LHVari += getLogDivFac(eso - nvo, eso);
             LHVari += getLogDivFac(ns * no + 1, ns * no - no + 1);
             LHVari += getLogDivFac(ns * no - eso - no + nvo, ns * no - eso);
-            //t<->o
-            unsigned int eto = typeModel.m_numEdgesOf2Groups[t][o];
+
+            //target_group<->q
+            unsigned int eto = typeModel.e_rs_[target_group][q];
             LHVari += getLogDivFac(eto + nvo, eto);
             LHVari += getLogDivFac(nt * no + 1, nt * no + no + 1);
             LHVari += getLogDivFac(nt * no - eto + no - nvo, nt * no - eto);
         }
-        //s<->t
-        unsigned int est = typeModel.m_numEdgesOf2Groups[s][t];
-        unsigned int nvt = typeModel.m_numTargetVtxGroup[v][t];
+        //source_group<->target_group
+        unsigned int est = typeModel.e_rs_[source_group][target_group];
+        unsigned int nvt = typeModel.m_numTargetVtxGroup[vtx][target_group];
 
         /* Self-loop is not allowed */
         LHVari += getLogDivFac(est - nvt + nvs, est);
         LHVari += getLogDivFac(ns * nt + 1, (ns - 1) * (nt + 1) + 1);
         LHVari += getLogDivFac((ns - 1) * (nt + 1) - est + nvt - nvs, ns * nt - est);
-        //s<->s
-        unsigned int ess = typeModel.m_numEdgesOf2Groups[s][s];
+
+        //source_group<->source_group
+        unsigned int ess = typeModel.e_rs_[source_group][source_group];
         LHVari += getLogDivFac(ess - nvs, ess);
         LHVari += getLogDivFac(ns * (ns - 1) / 2 + 1, (ns - 1) * (ns - 2) / 2 + 1);
         LHVari += getLogDivFac((ns - 1) * (ns - 2) / 2 - ess + nvs, ns * (ns - 1) / 2 - ess);
 
-        //t<->t
-        unsigned int ett = typeModel.m_numEdgesOf2Groups[t][t];
+        //target_group<->target_group
+        unsigned int ett = typeModel.e_rs_[target_group][target_group];
         LHVari += getLogDivFac(ett + nvt, ett);
         LHVari += getLogDivFac(nt * (nt - 1) / 2 + 1, (nt + 1) * nt / 2 + 1);
         LHVari += getLogDivFac((nt + 1) * nt / 2 - ett - nvt, nt * (nt - 1) / 2 - ett);
         //
-        pair<unsigned int, double> lhvariPair_(t, LHVari);
+        pair<unsigned int, double> lhvariPair_(target_group, LHVari);
         m_LHVariPairs.push_back(lhvariPair_);
-        m_LLHVariTable[t] = LHVari;
+        m_LLHVariTable[target_group] = LHVari;
+//        std::clog << "m_LHVariPairs.size() = " << m_LHVariPairs.size() << "\n";
+//        std::clog << "source_group = " << m_LHVariPairs[0].first << "; LHVari = " << m_LHVariPairs[0].second <<"\n";
+//        std::clog << "target_group = " << m_LHVariPairs[1].first << "; LHVari = " << m_LHVariPairs[1].second <<"\n";
+//        std::clog << "---\n";
     }
 }
 
-unsigned MCMC::calcTargetType() noexcept {
+unsigned int MCMC::compute_gibbs_jump() noexcept {
     unsigned int i;
     double dsum = 0.0;
     double maxLogDif = m_LHVariPairs[0].second;
@@ -139,8 +148,10 @@ unsigned MCMC::calcTargetType() noexcept {
         dsum += m_LHVariPairs[i].second;
         m_transProbSelect[i] = dsum;
     }
-    for (i = 0; i < m_LHVariPairs.size(); i++)
+    for (i = 0; i < m_LHVariPairs.size(); i++) {
         m_LHVariPairs[i].second /= dsum;
+    }
+    // Choose which label to change to, for vertex vtx; heat-bath jump.
     int index = getIndexProb(m_transProbSelect, (int) m_LHVariPairs.size());
     unsigned int targetType = m_LHVariPairs[index].first;
     return targetType;
@@ -169,7 +180,7 @@ void MCMC::initLogGammaTable(unsigned int size) noexcept {
 }
 
 // return  ln(a!/b!)
-double MCMC::getLogDivFac(unsigned int a, unsigned int b) {
+double MCMC::getLogDivFac(unsigned int a, unsigned int b) noexcept {
     if (a > m_maxsizeLogtable || b > m_maxsizeLogtable) {
         cerr << "need more memory for logtable--getLogDivFac()" << endl;
 //        delete[] m_logfactable;  // TODO: how to delete float_vec_t properly? Is it even needed?
@@ -180,7 +191,7 @@ double MCMC::getLogDivFac(unsigned int a, unsigned int b) {
 }
 
 // return  ln(a!)
-double MCMC::getLogFac(unsigned int a) {
+double MCMC::getLogFac(unsigned int a) noexcept {
     if (a > m_maxsizeLogtable) {
         cerr << "need more memory for logtable -- getLogFac()\t" << a << endl;
 //        delete[] m_logfactable;  //TODO: proper delete??
@@ -190,7 +201,7 @@ double MCMC::getLogFac(unsigned int a) {
     return m_logfactable[a];
 }
 
-double MCMC::getLog(unsigned int a) {
+double MCMC::getLog(unsigned int a) noexcept {
     if (a > m_maxsizeLogtable) {
         cerr << "need more memory for logtable -- getLog()\t" << a << endl;
 //        delete[] m_logtable; //TODO
@@ -200,80 +211,25 @@ double MCMC::getLog(unsigned int a) {
     return m_logtable[a];
 }
 
-void MCMC::initVtxClassifiMatrix() {
-    for (unsigned int i = 0; i < N_; ++i) {
-        for (unsigned int j = 0; j < Q_; ++j) {
-            dvtxClassifiMatrix[i][j] = 0.0;
-        }
-    }
-}
-
-void MCMC::updateVtxClassifiMatrix() {//should be called after mutateTypeModel()
-    for (auto const &i: m_LHVariPairs) {
-        dvtxClassifiMatrix[m_mutateVtxNo][i.first] += i.second;
-    }
-}
-
-double **MCMC::getVtxClassifiMatrix() {
-    double dSum;
-    for (unsigned int i = 0; i < N_; i++) {
-        dSum = 0.0;
-        for (unsigned int j = 0; j < Q_; j++) {
-            dSum += dvtxClassifiMatrix[i][j];
-        }
-        if (dSum != 0.0) {
-            for (unsigned int j = 0; j < Q_; j++)
-                dvtxClassifiMatrix[i][j] /= dSum;
-        }
-    }
-    return dvtxClassifiMatrix;
-}
-
-void MCMC::randInitTypeModel(const set<unsigned> &topVtxSet) {
+void MCMC::randInitTypeModel(const set<unsigned> &topVtxSet) noexcept {
     m_typeModel.randInitGroups(topVtxSet);
-    initLLHValue();
+    init_log_likelihood();
 }
 
-void MCMC::initBestTypeModel() {
-    unsigned i, j;
-    m_bestLLHvalue = calcLikelihood(m_typeModel);
-    for (i = 0; i < Q_; i++) {
-        for (j = 0; j < Q_; j++) {
-            m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
-        }
-        m_bestGroupCardi[i] = m_typeModel.m_groupCardiTable[i];
-    }
-    for (i = 0; i < N_; i++) {
-        m_bestVtxTypeTable[i] = m_typeModel.getVtxType(i);
-    }
-}
 
-void MCMC::updateBestTypeModel() {
-    if (m_logLikelihoodValue > m_bestLLHvalue) {
-        m_bestLLHvalue = calcLikelihood(m_typeModel);
-        for (unsigned int i = 0; i < Q_; i++) {
-            for (unsigned int j = 0; j < Q_; j++) {
-                m_bestEdgeConnMatrix[i][j] = m_typeModel.m_numEdgesOf2Groups[i][j];
-            }
-            m_bestGroupCardi[i] = m_typeModel.m_groupCardiTable[i];
-        }
-        for (unsigned int i = 0; i < N_; i++) {
-            m_bestVtxTypeTable[i] = m_typeModel.getVtxType(i);
-        }
-    }
-}
-
-void MCMC::mutateTypeModel(unsigned int v, unsigned int t) {
-    m_mutateVtxNo = v;
+void MCMC::gibbs_jump(unsigned int vtx, unsigned int t) noexcept {
+    m_mutateVtxNo = vtx;
     m_targetType = t;
-    m_sourceType = m_typeModel.getVtxType(m_mutateVtxNo);
+    m_sourceType = m_typeModel.get_membership(m_mutateVtxNo);
     if (m_targetType != m_sourceType) {
-        m_typeModel.mutate(v, t);
-        updateLLHValue();
+        m_typeModel.mutate(vtx, t);
+
+        update_log_likelihood();
+
         if (rand01() < 0.001) {
             double llhvalue = calcLikelihood(m_typeModel);
             if (fabs(llhvalue - m_logLikelihoodValue) > 0.00001) {
-                cout << "likelihood calculation error! -- MCMC::mutateTypeModel()" << endl;
+                cout << "likelihood calculation error! -- MCMC::gibbs_jump()" << endl;
                 cout << llhvalue << "\t" << m_logLikelihoodValue << endl;
                 getchar();
             } else {
@@ -283,7 +239,7 @@ void MCMC::mutateTypeModel(unsigned int v, unsigned int t) {
     }
 }
 
-double MCMC::calcLikelihood(const TypeModel &typemodel) {
+double MCMC::calcLikelihood(const TypeModel &typemodel) noexcept {
     double llhvalue;
     if (m_blockModelType == 1) {
         llhvalue = calcLikelihoodM1(typemodel);
@@ -295,22 +251,27 @@ double MCMC::calcLikelihood(const TypeModel &typemodel) {
 }
 
 //This method returns the likelihood of the current Type Model (model type is 1)
-double MCMC::calcLikelihoodM1(const TypeModel &typemodel) {
-    unsigned int i, j, a, b;
-    unsigned int numtype = typemodel.getNumType();
+double MCMC::calcLikelihoodM1(const TypeModel &typemodel) noexcept {
     double log_likelihood_value = 0.0;
 
     // Only for non-directed and no self-loop
-    for (i = 0; i < numtype; i++) {
-        for (j = i; j < numtype; j++) {
-            a = typemodel.m_numEdgesOf2Groups[i][j];
-            if (i == j)
-                b = typemodel.m_groupCardiTable[i] * (typemodel.m_groupCardiTable[i] - 1) / 2 - a;
-            else
-                b = typemodel.m_groupCardiTable[i] * typemodel.m_groupCardiTable[j] - a;
+    for (unsigned int i = 0; i < Q_; i++) {
+        for (unsigned int j = i; j < Q_; j++) {
+            unsigned int a = typemodel.e_rs_[i][j];
+            unsigned int b;
+            if (i == j) {
+                b = typemodel.n_r_[i] * (typemodel.n_r_[i] - 1) / 2 - a;
+            } else {
+                b = typemodel.n_r_[i] * typemodel.n_r_[j] - a;
+            }
             log_likelihood_value = log_likelihood_value + getLogFac(a) + getLogFac(b) - getLogFac(a + b + 1);
         }
     }
     return log_likelihood_value;
 }
 
+void MCMC::init_log_likelihood() noexcept { m_logLikelihoodValue = calcLikelihood(m_typeModel); }
+
+void MCMC::update_log_likelihood() noexcept {
+    m_logLikelihoodValue += m_LLHVariTable[m_targetType];
+}

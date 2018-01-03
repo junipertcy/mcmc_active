@@ -12,15 +12,15 @@ public:
 
     virtual void resetForNextInit() noexcept { ; }
 
-    virtual unsigned int getTopVtx(uint_vec_t &arrayTop, unsigned numTop) noexcept { return 0; }
+    virtual unsigned int getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexcept { return 0; }
 
     virtual void updateData() noexcept { ; }
 
-    virtual unsigned int getNumVtx() const noexcept { return m_MC_A.getTypeModel().getGraph().getNumVtx(); }
+    virtual unsigned int get_N() const noexcept { return m_MC_A.getTypeModel().getGraph().get_N(); }
 
-    virtual unsigned int getNumTypeGraph() const noexcept { return m_MC_A.getTypeModel().getGraph().getNumType(); }
+    virtual unsigned int getNumTypeGraph() const noexcept { return m_MC_A.getTypeModel().getGraph().get_Q(); }
 
-    virtual unsigned int getNumTypeModel() const noexcept { return m_MC_A.getTypeModel().getNumType(); }
+    virtual unsigned int getNumTypeModel() const noexcept { return m_MC_A.getTypeModel().get_Q(); }
 
 protected:
     Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet);
@@ -49,22 +49,17 @@ public:
 
     void updateData() noexcept override;
 
-    unsigned int getNumVtx() const noexcept override;
+    unsigned int get_N() const noexcept override;
 
     unsigned int getNumTypeGraph() const noexcept override;
 
     unsigned int getNumTypeModel() const noexcept override;
-
 
 private:
     double_mat_t m_accumuMargDistri;
     float_vec_t m_accumuCondEntropy;
     float_vec_t m_numAccumuCondEntropy;
 };
-
-
-
-
 
 
 #endif

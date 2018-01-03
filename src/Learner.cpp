@@ -9,13 +9,13 @@ bool compare(const pair<double,unsigned int>&i, const pair<double,unsigned int>&
 
 Learner::Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned int> &topVtxSet):
         m_MC_A(mca),
-        m_MC_B(mcb),
+        m_MC_B(mcb),  // TODO: why!?
         m_topVtxSet(topVtxSet) {
-    N_ = mca.getTypeModel().getGraph().getNumVtx();
-    Q_ = mca.getTypeModel().getNumType();
+    N_ = mca.getTypeModel().getGraph().get_N();
+    Q_ = mca.getTypeModel().get_Q();
 }
 
-unsigned int MutualInfo::getNumVtx() const noexcept { return Learner::getNumVtx(); }
+unsigned int MutualInfo::get_N() const noexcept { return Learner::get_N(); }
 
 unsigned int MutualInfo::getNumTypeGraph() const noexcept { return Learner::getNumTypeGraph(); }
 
@@ -47,8 +47,9 @@ void MutualInfo::resetForNextPhase() noexcept {
 
 unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexcept {
     unsigned i, j;
-    double margEntropy, condEntropy, mutualEntropy;
+    double margEntropy, condEntropy, mutualEntropyGain;
     vector <pair<double,unsigned int> > nodes_mi_gains;
+
     nodes_mi_gains.resize(N_);
     for (i = 0; i < N_; ++i) {
         if (m_topVtxSet.count(i)) {
@@ -60,6 +61,7 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
             continue;
         }
         condEntropy = m_accumuCondEntropy[i] / (double) m_numAccumuCondEntropy[i];
+
         // To normalize the accumulated Marginal Distribution
         double dSum = 0.0;
         for (j = 0; j < Q_; ++j) {
@@ -73,15 +75,22 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
             m_accumuMargDistri[i][j] /= dSum;
         }
         margEntropy = entropy(m_accumuMargDistri[i], Q_);  // Now, we can directly compute the average entropy
+        // MI(v) = H(v) − H(v | G \ v)
+        //       = entropy of the average conditional distribution (margEntropy) - average of the conditional entropy (condEntropy);
 
-        mutualEntropy = margEntropy - condEntropy;
-        nodes_mi_gains[i] = pair<double,unsigned int>(mutualEntropy, i);
+        mutualEntropyGain = margEntropy - condEntropy;
+//        std::clog << "[DEBUG] @i=" << i <<"; margEntropy: " << margEntropy << "; condEntropy: " << condEntropy << "\n";
+
+        nodes_mi_gains[i] = pair<double,unsigned int>(mutualEntropyGain, i);
     }
 
-    for (unsigned int node_id = 0; node_id < N_; ++node_id) {
-        std::cout << nodes_mi_gains[node_id].first << ",";
-    }
-    std::cout << "\n";
+//    for (unsigned int node_id = 0; node_id < N_; ++node_id) {
+//        if (node_id > 0) {
+//            std::cout << ",";
+//        }
+//        std::cout << nodes_mi_gains[node_id].first;
+//    }
+//    std::cout << "\n";
 
     std::sort(nodes_mi_gains.begin(),nodes_mi_gains.end(), compare);
 
@@ -96,33 +105,35 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
 }
 
 void MutualInfo::updateData() noexcept {
-    unsigned int mutatevtxno_a = m_MC_A.getMutateVtx();
-    unsigned int mutatevtxno_b = m_MC_B.getMutateVtx();
-    const vector <pair<unsigned int, double>> &lhvpairs_a = m_MC_A.getLHVariPairs();
-    const vector <pair<unsigned int, double>> &lhvpairs_b = m_MC_B.getLHVariPairs();
+    unsigned int selected_vtx_a = m_MC_A.get_selected_vtx();
+    unsigned int selected_vtx_b = m_MC_B.get_selected_vtx();
+    const vector <pair<unsigned int, double>> &lhvpairs_a = m_MC_A.get_likelihood_variation_pairs();
+    const vector <pair<unsigned int, double>> &lhvpairs_b = m_MC_B.get_likelihood_variation_pairs();
 
     double_vec_t probarray;
     probarray.resize(lhvpairs_a.size());
 
     for (auto la: lhvpairs_a) {
-        m_accumuMargDistri[mutatevtxno_a][la.first] += la.second;
+        m_accumuMargDistri[selected_vtx_a][la.first] += la.second;
     }
 
     for (auto lb: lhvpairs_b) {
-        m_accumuMargDistri[mutatevtxno_b][lb.first] += lb.second;
+        m_accumuMargDistri[selected_vtx_b][lb.first] += lb.second;
     }
 
     for (unsigned int i = 0; i < lhvpairs_a.size(); i++) {
         probarray[i] = lhvpairs_a[i].second;
     }
-
-    m_accumuCondEntropy[mutatevtxno_a] += entropy(probarray, (unsigned) (lhvpairs_a.size()));
-    m_numAccumuCondEntropy[mutatevtxno_a]++;
+//    std::clog << "update to m_accumuCondEntropy @ " << selected_vtx_a << "\n";
+    m_accumuCondEntropy[selected_vtx_a] += entropy(probarray, (unsigned) (lhvpairs_a.size()));
+    m_numAccumuCondEntropy[selected_vtx_a]++;
 
     for (unsigned int i = 0; i < lhvpairs_b.size(); i++) {
         probarray[i] = lhvpairs_b[i].second;
     }
-    m_accumuCondEntropy[mutatevtxno_b] += entropy(probarray, (unsigned) (lhvpairs_b.size()));
-    m_numAccumuCondEntropy[mutatevtxno_b]++;
+//    std::clog << "update to m_accumuCondEntropy @ " << selected_vtx_b << "\n";
+    m_accumuCondEntropy[selected_vtx_b] += entropy(probarray, (unsigned) (lhvpairs_b.size()));
+    m_numAccumuCondEntropy[selected_vtx_b]++;
+//    std::clog << "---\n";
 
 }

@@ -1,9 +1,7 @@
 #include "MCMCAlg.h"
 #include "Utility.cpp"
-#include "output_functions.h"
 
 double MCMCAlg::stabRatio = 0.5;
-unsigned int MCMCAlg::numAccuracyBlock = 10;
 
 MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> &frozentypes, unsigned int numOptInit,
                  long numOptStep, unsigned int numLearnerInit, long numLearnerStep, unsigned int numPhase, unsigned int numTop,
@@ -30,9 +28,9 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> 
             m_learner = std::make_unique<MutualInfo>(*m_MC_A, *m_MC_B, m_topVtxSet);
     }
 
-    N_ = m_typeModelA->getGraph().getNumVtx();
-    Q_graph_ = m_typeModelA->getGraph().getNumType();
-    Q_model_ = m_typeModelA->getNumType();
+    N_ = m_typeModelA->getGraph().get_N();
+    Q_graph_ = m_typeModelA->getGraph().get_Q();
+    Q_model_ = m_typeModelA->get_Q();
     for (i = 0; i < N_; i++) {
         m_remainVtxSet.insert(i);
     }
@@ -52,62 +50,17 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> 
 void MCMCAlg::runMCMCAlg() noexcept {
     /* IMPORTANT: Entry function */
     for (m_curPhase_ = 1; (m_curPhase_ <= m_numPhase) && (!m_remainVtxSet.empty()); ++m_curPhase_) {
-        runOnePhase();
-    }
-}
-
-
-void MCMCAlg::runOnePhase() noexcept {
-    m_learner->resetForNextPhase();
-
-    (this->m_MC_A)->initVtxClassifiMatrix();
-    (this->m_MC_B)->initVtxClassifiMatrix();
-
-    for (m_curInit = 1; m_curInit <= max(m_numOptInit, m_numLearnerInit); m_curInit++) {
-        runOneInit();
-    }
-
-    getTopVtx();
-
-    std::unique_ptr<double_mat_t> typeClassifiMatrix = std::make_unique<double_mat_t>();
-    (*typeClassifiMatrix).resize(Q_graph_);
-
-    for (unsigned int i = 0; i < Q_graph_; i++)
-        (*typeClassifiMatrix)[i].resize(Q_model_);
-    for (unsigned int i = 0; i < Q_graph_; i++) {
-        for (unsigned int j = 0; j < Q_model_; j++) {
-            (*typeClassifiMatrix)[i][j] = 0.0;
+        m_learner->resetForNextPhase();
+        for (m_curInit = 1; m_curInit <= max(m_numOptInit, m_numLearnerInit); m_curInit++) {
+            runOneInit();
         }
-    }
-    unsigned int realtype;
-    double **vtxClassifiMatrixA = m_MC_A->getVtxClassifiMatrix();
-    double **vtxClassifiMatrixB = m_MC_B->getVtxClassifiMatrix();
-    for (unsigned int i = 0; i < N_; i++) {
-        realtype = m_MC_A->getTypeModel().getGraph().getVertex(i).getType();
-        for (unsigned int j = 0; j < Q_model_; j++) {
-            (*typeClassifiMatrix)[realtype][j] +=/*vtxClassifiMatrixA[i][j];//*/
-                    (vtxClassifiMatrixA[i][j] + vtxClassifiMatrixB[i][j]) / 2;
-        }
-    }
-
-    std::unique_ptr<uint_vec_t> topvtxGroupCardi = std::make_unique<uint_vec_t>();
-    (*topvtxGroupCardi).resize(Q_graph_);
-    for (unsigned int i = 0; i < Q_graph_; i++) {
-        (*topvtxGroupCardi)[i] = 0;
-    }
-
-    for (auto const &i: m_topVtxSet) {
-        realtype = (m_typeModelA->m_graph).getVertex(i).getType();
-        (*topvtxGroupCardi)[realtype]++;
+        getTopVtx();
     }
 }
 
 void MCMCAlg::runOneInit() noexcept {
     m_MC_A->randInitTypeModel(this->m_topVtxSet);
     m_MC_B->randInitTypeModel(this->m_topVtxSet);
-
-    (this->m_MC_A)->initBestTypeModel();
-    (this->m_MC_B)->initBestTypeModel();
 
     m_learner->resetForNextInit();//this is very important for average agreement learner.
 
@@ -129,34 +82,24 @@ void MCMCAlg::runOneStep() noexcept {
     unsigned int mutateVtxNo;
     unsigned int sourceType;
     unsigned int targetType;
+
     //typeModelA
     do {
-        mutateVtxNo = (unsigned) getRandRemainVtx();
+        mutateVtxNo = get_rand_remain_vtx();
         sourceType = m_typeModelA->memberships_[mutateVtxNo];
-    } while (m_typeModelA->m_groupCardiTable[sourceType] == 1);
+    } while (m_typeModelA->n_r_[sourceType] == 1);
     targetType = m_MC_A->getTargetType(mutateVtxNo);
 
-    m_MC_A->mutateTypeModel(mutateVtxNo, targetType);
-
-
-    if ((m_curInit <= m_numOptInit) && (m_curStep > stabRatio * double(m_numOptStep)) && (m_curStep <= m_numOptStep)) {
-        (this->m_MC_A)->updateVtxClassifiMatrix();
-        (this->m_MC_A)->updateBestTypeModel();
-    }
+    m_MC_A->gibbs_jump(mutateVtxNo, targetType);
 
     //typeModelB
     do {
-        mutateVtxNo = (unsigned) getRandRemainVtx();
+        mutateVtxNo = get_rand_remain_vtx();
         sourceType = m_typeModelB->memberships_[mutateVtxNo];
-    } while (m_typeModelB->m_groupCardiTable[sourceType] == 1);
+    } while (m_typeModelB->n_r_[sourceType] == 1);
     targetType = m_MC_B->getTargetType(mutateVtxNo);
 
-    m_MC_B->mutateTypeModel(mutateVtxNo, targetType);
-
-    if ((m_curInit <= m_numOptInit) && (m_curStep > stabRatio * double(m_numOptStep)) && (m_curStep <= m_numOptStep)) {
-        (this->m_MC_B)->updateVtxClassifiMatrix();
-        (this->m_MC_B)->updateBestTypeModel();
-    }
+    m_MC_B->gibbs_jump(mutateVtxNo, targetType);
 
     if ((m_curInit <= m_numLearnerInit) && (m_curStep > stabRatio * double(m_numLearnerStep)) &&
         (m_curStep <= m_numLearnerStep)) {
@@ -164,7 +107,7 @@ void MCMCAlg::runOneStep() noexcept {
     }
 }
 
-int MCMCAlg::getRandRemainVtx() noexcept {
+unsigned int MCMCAlg::get_rand_remain_vtx() noexcept {
     int index = randN((int)m_remainVtxSet.size());
     auto setiter = m_remainVtxSet.begin();
     for (unsigned int i = 0; i < index; ++i) {

@@ -12,8 +12,6 @@ public:
 
     void runMCMCAlg() noexcept;
 
-    void runOnePhase() noexcept;
-
     void runOneInit() noexcept;
 
     void runOneStep() noexcept;
@@ -27,7 +25,7 @@ private:
     unsigned int Q_model_;
     unsigned int Q_graph_;
 
-    int getRandRemainVtx() noexcept;
+    unsigned int get_rand_remain_vtx() noexcept;
 
     void getTopVtx() noexcept;
 

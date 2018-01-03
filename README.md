@@ -30,14 +30,14 @@ the output should look like:
 gml_path: dataset/karate.gml
 Run #1 (out of 3) is running...
 0.685983,0.595556,0.604112,0.448664, ...,
-The indexes of the selected node(s) are: 14,
+The indexes of the selected node(s) are: 14
 ...
 Run #2 (out of 3) is running...
 ...
 
 ```
 
-where `0.685983,0.595556,0.604112,0.448664, ...,` is in std::cout whilst the others appear in std::clog (thereby allowing for easy redirection of the output).
+where `0.685983,0.595556,0.604112,0.448664, ...` is in std::cout whilst the others appear in std::clog (thereby allowing for easy redirection of the output).
 An float on the output line corresponds to the expected mutual information gain of the vertex `v_0, v_1,..., v_n`, assuming the correct label of which vertex is known and fixed. 
 
 

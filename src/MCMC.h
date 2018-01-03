@@ -7,62 +7,47 @@ class MCMC {
 public:
     explicit MCMC(TypeModel &tm, int blockmodeltype = 1, bool groupcorrected = false);
 
-    unsigned getTargetType(unsigned int mutateVtxNo) noexcept;
+    unsigned int getTargetType(unsigned int mutateVtxNo) noexcept;
 
-    unsigned getMutateVtx() const { return m_mutateVtxNo; }
+    unsigned int get_selected_vtx() const noexcept;
 
-    void initVtxClassifiMatrix();
+    void randInitTypeModel(const set<unsigned int> &topVtxSet) noexcept;
 
-    void updateVtxClassifiMatrix();
+    void gibbs_jump(unsigned int v, unsigned int t) noexcept;
 
-    double **getVtxClassifiMatrix();
+    const TypeModel &getTypeModel() const noexcept;
 
-    void randInitTypeModel(const set<unsigned> &topVtxSet);
+    const vector<pair<unsigned int, double>> &get_likelihood_variation_pairs() const noexcept;
 
-    void mutateTypeModel(unsigned v, unsigned t);
-
-    void initBestTypeModel();
-
-    void updateBestTypeModel();
-
-    const TypeModel &getTypeModel() const { return m_typeModel; }
-
-    const vector<pair<unsigned, double>> &getLHVariPairs() const { return m_LHVariPairs; }
-
-    vector<pair<unsigned, double>> m_LHVariPairs;
+    vector<pair<unsigned int, double>> m_LHVariPairs;
     double_vec_t m_LLHVariTable;
-    float_mat_t m_bestEdgeConnMatrix;
-    float_vec_t m_bestGroupCardi;
-    uint_vec_t m_bestVtxTypeTable;
 
 
 private:
-    void calcLHVari(unsigned int vtxNo, TypeModel &typeModel) noexcept;
+    void compute_likelihood(unsigned int vtxNo, TypeModel &typeModel) noexcept;
 
-    //case 2.1: undirected for model type 1
-    void calcLHVariUDM1(unsigned int vtxNo, TypeModel &typeModel) noexcept;
+    void _compute_likelihood(unsigned int vtxNo, TypeModel &typeModel) noexcept;
 
     void initLogTable(unsigned int tablesize) noexcept;
 
     void initLogGammaTable(unsigned int tablesize) noexcept;
 
-    unsigned calcTargetType() noexcept;
+    unsigned int compute_gibbs_jump() noexcept;
 
-    double getLogFac(unsigned a);
+    double getLogFac(unsigned int a) noexcept;
 
-    double getLog(unsigned a);
+    double getLog(unsigned int a) noexcept;
 
-    double getLogDivFac(unsigned a, unsigned b);
+    double getLogDivFac(unsigned int a, unsigned int b) noexcept;
 
-    double calcLikelihood(const TypeModel &typemodel);
+    double calcLikelihood(const TypeModel &typemodel) noexcept;
 
-    double calcLikelihoodM1(const TypeModel &typemodel);
+    double calcLikelihoodM1(const TypeModel &typemodel) noexcept;
 
     //double calcGraphLikelihoodM2();
-    void initLLHValue() {
-        m_logLikelihoodValue = calcLikelihood(m_typeModel);
-    }
-    void updateLLHValue() { m_logLikelihoodValue += m_LLHVariTable[m_targetType]; }
+    void init_log_likelihood() noexcept;
+
+    void update_log_likelihood() noexcept;
 
     static double PI;
     double_vec_t m_transProbSelect;
@@ -85,11 +70,9 @@ private:
     static const unsigned OPTIMIZOR;
 
     double **dvtxClassifiMatrix;
-    double m_bestLLHvalue;
     double m_logLikelihoodValue;
     unsigned int m_blockModelType;
     bool m_groupCorrected;
-
 };
 
 #endif
