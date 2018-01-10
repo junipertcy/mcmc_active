@@ -58,7 +58,7 @@ int main(int argc, char const *argv[]) {
     unsigned int numOptInit = 50; // number of initials for optimization
     unsigned int numLearnerInit = 50; // number of initials for active learning
     unsigned int numOptStep = 1000;// number of iterations in each initial for optimization
-    unsigned int numLearnerStep = 1000; // number of iterations in each initial for active learning
+    unsigned int numLearnerStep = 100000; // number of iterations in each initial for active learning
     unsigned int learningMethod = 1; // indicates which active learner is used: 1-MutualInfo, 2-AvgAgree, 3-RandomLearner, 4-TopSeqLearner, 5-MaxDegree, 6-MaxBtwn.
 
     for (unsigned int i = 0; i < runs; ++i) {

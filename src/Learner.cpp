@@ -84,13 +84,13 @@ unsigned MutualInfo::getTopVtx(uint_vec_t &arrayTop, unsigned int numTop) noexce
         nodes_mi_gains[i] = pair<double,unsigned int>(mutualEntropyGain, i);
     }
 
-//    for (unsigned int node_id = 0; node_id < N_; ++node_id) {
-//        if (node_id > 0) {
-//            std::cout << ",";
-//        }
-//        std::cout << nodes_mi_gains[node_id].first;
-//    }
-//    std::cout << "\n";
+    for (unsigned int node_id = 0; node_id < N_; ++node_id) {
+        if (node_id > 0) {
+            std::cout << ",";
+        }
+        std::cout << nodes_mi_gains[node_id].first;
+    }
+    std::cout << "\n";
 
     std::sort(nodes_mi_gains.begin(),nodes_mi_gains.end(), compare);
 
@@ -124,16 +124,13 @@ void MutualInfo::updateData() noexcept {
     for (unsigned int i = 0; i < lhvpairs_a.size(); i++) {
         probarray[i] = lhvpairs_a[i].second;
     }
-//    std::clog << "update to m_accumuCondEntropy @ " << selected_vtx_a << "\n";
     m_accumuCondEntropy[selected_vtx_a] += entropy(probarray, (unsigned) (lhvpairs_a.size()));
     m_numAccumuCondEntropy[selected_vtx_a]++;
 
     for (unsigned int i = 0; i < lhvpairs_b.size(); i++) {
         probarray[i] = lhvpairs_b[i].second;
     }
-//    std::clog << "update to m_accumuCondEntropy @ " << selected_vtx_b << "\n";
     m_accumuCondEntropy[selected_vtx_b] += entropy(probarray, (unsigned) (lhvpairs_b.size()));
     m_numAccumuCondEntropy[selected_vtx_b]++;
-//    std::clog << "---\n";
 
 }

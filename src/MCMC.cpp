@@ -124,8 +124,9 @@ void MCMC::_compute_likelihood(unsigned int vtx, TypeModel &typeModel) noexcept 
 unsigned int MCMC::compute_gibbs_jump() noexcept {
     unsigned int i;
     double dsum = 0.0;
-    double maxLogDif = m_LHVariPairs[0].second;
-    double minLogDif = m_LHVariPairs[0].second;
+    double maxLogDif = 0;
+    double minLogDif = 0;
+
     for (i = 1; i < m_LHVariPairs.size(); i++) {
         if (m_LHVariPairs[i].second > maxLogDif)
             maxLogDif = m_LHVariPairs[i].second;
@@ -151,6 +152,7 @@ unsigned int MCMC::compute_gibbs_jump() noexcept {
     for (i = 0; i < m_LHVariPairs.size(); i++) {
         m_LHVariPairs[i].second /= dsum;
     }
+
     // Choose which label to change to, for vertex vtx; heat-bath jump.
     int index = getIndexProb(m_transProbSelect, (int) m_LHVariPairs.size());
     unsigned int targetType = m_LHVariPairs[index].first;
