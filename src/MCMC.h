@@ -5,7 +5,7 @@
 
 class MCMC {
 public:
-    explicit MCMC(TypeModel &tm, int blockmodeltype = 1, bool groupcorrected = false);
+    explicit MCMC(TypeModel &tm, unsigned int blockmodeltype = 1, bool groupcorrected = false);
 
     unsigned int getTargetType(unsigned int mutateVtxNo) noexcept;
 

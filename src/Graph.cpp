@@ -2,7 +2,6 @@
 
 
 Graph::Graph(string sGraphFileName) {
-    unsigned int i;
     ifstream infile(sGraphFileName.c_str());
     string words;
 

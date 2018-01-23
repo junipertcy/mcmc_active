@@ -2,11 +2,13 @@
 #include "Utility.cpp"
 #include "output_functions.h"
 
-TypeModel::TypeModel(const Graph &graph, unsigned numtype, set<unsigned> &frozentypes):
+TypeModel::TypeModel(const Graph &graph, unsigned int numtype, set<unsigned int> &frozentypes):
         m_graph(graph), Q_(numtype), N_(m_graph.get_N())
 {
+
+//    m_graph = std::make_shared<Graph>(graph);
     unsigned int i;
-    m_numActiveType = numtype - frozentypes.size();
+    m_numActiveType = numtype - (int) frozentypes.size();
 
     memberships_.resize(N_);
     n_r_.resize(Q_);

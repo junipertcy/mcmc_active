@@ -1,3 +1,6 @@
+#include "MCMC.h"
+#include "Learner.h"
+
 #include "MCMCAlg.h"
 #include "Utility.cpp"
 
@@ -6,7 +9,8 @@ double MCMCAlg::stabRatio = 0.5;
 MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> &frozentypes, unsigned int numOptInit,
                  long numOptStep, unsigned int numLearnerInit, long numLearnerStep, unsigned int numPhase, unsigned int numTop,
                  unsigned int learningMethod, unsigned int modelType, bool groupcorrected):
-       m_graph(graph) {
+       m_graph(graph)
+{
 
     m_typeModelA = std::make_unique<TypeModel>(graph, numTypeInModel, frozentypes);
     m_typeModelB = std::make_unique<TypeModel>(graph, numTypeInModel, frozentypes);

@@ -5,9 +5,10 @@
 
 double MCMC::PI = 3.141592653589793;
 
-MCMC::MCMC(TypeModel &tm, int blockmodeltype, bool groupcorrected) : m_typeModel(tm), m_blockModelType(blockmodeltype),
-                                                                     m_groupCorrected(
-                                                                             groupcorrected)//,m_bestTypeModel(tm)
+MCMC::MCMC(TypeModel &tm, unsigned int blockmodeltype, bool groupcorrected):
+        m_typeModel(tm),
+        m_blockModelType(blockmodeltype),
+        m_groupCorrected(groupcorrected)
 {
     N_ = tm.getGraph().get_N();
     Q_ = tm.get_Q();

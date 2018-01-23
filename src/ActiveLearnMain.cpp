@@ -60,15 +60,19 @@ int main(int argc, char const *argv[]) {
     unsigned int numOptStep = 1000;// number of iterations in each initial for optimization
     unsigned int numLearnerStep = 100000; // number of iterations in each initial for active learning
     unsigned int learningMethod = 1; // indicates which active learner is used: 1-MutualInfo, 2-AvgAgree, 3-RandomLearner, 4-TopSeqLearner, 5-MaxDegree, 6-MaxBtwn.
+    std::unique_ptr<Graph>graph = std::make_unique<Graph>(graph_path);
 
     for (unsigned int i = 0; i < runs; ++i) {
         std::clog << "Run #" << i + 1 << " (out of " << runs <<") is running..." << "\n";
-        std::unique_ptr<Graph>graph = std::make_unique<Graph>(graph_path);
+
         std::unique_ptr<MCMCAlg>mcmc_algorithm = std::make_unique<MCMCAlg>(
                 *graph, numTypeInModel, frozentypes, numOptInit, numOptStep, numLearnerInit,
                 numLearnerStep, numPhase, numTop, learningMethod, modelType,
                 groupCorrected);
         mcmc_algorithm->runMCMCAlg();
+
+        //TODO: not sure if they are really needed.
+        mcmc_algorithm.release();
     }
     return 0;
 };

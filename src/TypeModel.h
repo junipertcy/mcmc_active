@@ -10,11 +10,14 @@ class TypeModel {
 
 public:
     const Graph &m_graph;
+//    std::shared_ptr<Graph> m_graph;
 
     const Graph &getGraph() const noexcept { return m_graph; }
+//    std::shared_ptr<Graph> getGraph() const noexcept { return m_graph; }
 
-    TypeModel(const Graph &graph, unsigned numtype/*including frozen types*/,
-              set<unsigned> &frozentypes/*frozen types defined in graph*/);
+
+    TypeModel(const Graph &graph, unsigned int numtype/*including frozen types*/,
+              set<unsigned int> &frozentypes/*frozen types defined in graph*/);
 
     unsigned int get_Q() const noexcept;
 
