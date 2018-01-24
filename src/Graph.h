@@ -22,6 +22,8 @@ public:
 
     const unsigned int get_degree_at_v(unsigned vtxno) const;
 
+    ~Graph();
+
 private:
     unsigned int N_;
     unsigned int Q_;

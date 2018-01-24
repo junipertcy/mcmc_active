@@ -22,6 +22,8 @@ public:
 
     virtual unsigned int getNumTypeModel() const noexcept { return m_MC_A.getTypeModel().get_Q(); }
 
+    virtual ~Learner(void);
+
 protected:
     Learner(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet);
 
@@ -40,6 +42,8 @@ protected:
 class MutualInfo : public Learner {
 public:
     MutualInfo(const MCMC &mca, const MCMC &mcb, const set<unsigned> &topVtxSet);
+
+    ~MutualInfo();
 
     void resetForNextPhase() noexcept override;
 

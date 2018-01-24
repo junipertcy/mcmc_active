@@ -134,3 +134,16 @@ void MutualInfo::updateData() noexcept {
     m_numAccumuCondEntropy[selected_vtx_b]++;
 
 }
+
+Learner::~Learner() {}
+
+MutualInfo::~MutualInfo()
+{
+    for (unsigned int i=0; i < N_; ++i) {
+        m_accumuMargDistri[i].clear();
+    }
+    m_accumuMargDistri.clear();
+
+    m_accumuCondEntropy.clear();
+    m_numAccumuCondEntropy.clear();
+}

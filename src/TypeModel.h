@@ -9,6 +9,8 @@ class TypeModel {
     friend class MCMC;
 
 public:
+    ~TypeModel();
+
     const Graph &m_graph;
 //    std::shared_ptr<Graph> m_graph;
 
@@ -35,7 +37,7 @@ public:
     uint_mat_t m_numTargetVtxGroup;
     uint_mat_t e_rs_;
 
-    unsigned **m_numTargetGroupVtx;//m_numTargetGroupVtx[i][v] number of vertices in group i that has target of vertex v
+    unsigned int **m_numTargetGroupVtx;//m_numTargetGroupVtx[i][v] number of vertices in group i that has target of vertex v
 
 private:
     unsigned int m_numActiveType;

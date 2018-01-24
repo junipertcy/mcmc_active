@@ -194,4 +194,28 @@ void TypeModel::mutate(unsigned int vtx, unsigned int target_group) noexcept {
 
 }
 
+TypeModel::~TypeModel(){
+    for (unsigned int i = 0; i < N_; ++i) {
+        m_numTargetVtxGroup[i].clear();
+    }
+    m_numTargetVtxGroup.clear();
+    //
+    if (m_numTargetGroupVtx){
+        for (unsigned int i = 0; i < Q_; ++i) {
+            delete [] m_numTargetGroupVtx[i];
+        }
+        delete [] m_numTargetGroupVtx;
+    }
 
+    for (unsigned int i = 0; i < Q_; ++i) {
+        e_rs_[i].clear();
+    }
+    e_rs_.clear();
+
+    // TODO: check if all the unnecessary stuff is cleaned.
+    n_r_.clear();
+    k_.clear();
+    memberships_.clear();
+    vtx_of_group_r_.clear();
+
+}

@@ -278,3 +278,14 @@ void MCMC::init_log_likelihood() noexcept { m_logLikelihoodValue = calcLikelihoo
 void MCMC::update_log_likelihood() noexcept {
     m_logLikelihoodValue += m_LLHVariTable[m_targetType];
 }
+
+MCMC::~MCMC()
+{
+    m_transProbSelect.clear();
+    m_logfactable.clear();
+    for(unsigned int i=0; i < N_; ++i) {
+        delete [] dvtxClassifiMatrix[i];
+    }
+    delete [] dvtxClassifiMatrix;
+    m_LLHVariTable.clear();
+}

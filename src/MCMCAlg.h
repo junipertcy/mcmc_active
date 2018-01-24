@@ -17,6 +17,8 @@ public:
 
     void runOneStep() noexcept;
 
+    ~MCMCAlg();
+
 private:
     unsigned int m_curPhase_;
     static unsigned int numAccuracyBlock;

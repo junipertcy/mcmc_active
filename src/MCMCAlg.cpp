@@ -131,3 +131,9 @@ void MCMCAlg::getTopVtx() noexcept {
         m_topVtxSeq.push_back((*arrayTop)[i]);
     }
 }
+
+MCMCAlg::~MCMCAlg() {
+    if (m_learner) {
+        m_learner.release();
+    }
+}
