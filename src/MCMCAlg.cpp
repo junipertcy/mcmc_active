@@ -41,7 +41,7 @@ MCMCAlg::MCMCAlg(const Graph &graph, unsigned numTypeInModel, set<unsigned int> 
 
     //init top vtx seq
     for (i = 0; i < N_; i++) {
-        unsigned gtype = graph.getVertex(i).getType();
+        unsigned int gtype = graph.getVertex(i).getType();
         if (m_typeModelA->isGTypeFrozen(gtype)) {
             m_topVtxSet.insert(i);
             m_remainVtxSet.erase(i);

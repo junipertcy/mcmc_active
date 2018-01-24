@@ -135,7 +135,7 @@ void MutualInfo::updateData() noexcept {
 
 }
 
-Learner::~Learner() {}
+Learner::~Learner() = default;
 
 MutualInfo::~MutualInfo()
 {

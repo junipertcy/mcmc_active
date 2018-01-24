@@ -130,4 +130,4 @@ const unsigned int Graph::get_degree_at_v(unsigned int vtxno) const {
     return vtxList[vtxno].getInDegree();
 }
 
-Graph::~Graph() {}
+Graph::~Graph() = default;
